@@ -1,0 +1,956 @@
+数据结构：数据类型+结构（逻辑结构+物理结构）+自定义操作（增，删，改，查）
+--按照某种逻辑关系组织起来的一批数据，
+应用计算机语言，按照一定的存取方式把他们存储
+到计算机存储器中，并为这些数据定义一个运算集合
+就称为一个数据结构
+---数据的逻辑结构和存储结构及其操作
+
+逻辑结构与物理结构 （根据视点不同，进行划分）
+  [1]逻辑结构：数据元素之间的相互关系。
+  ---------------------面向问题(针对具体问题，为了解决某个问题)
+     1)集合结构：元素之间无固定的关系
+     2)线性结构：元素之间是一对一的关系
+     3)树型结构：元素之间一对多的层次关系
+     4)图形结构：元素之间多对多的关系
+     
+  [2]物理结构：数据的逻辑结构在计算机中的存储形式
+  -----------面向计算机
+     1)顺序存储结构。把数据元素存放在地址连续的存储单元里。例如数组。
+     2)链式存储结构。把数据元素存放在任意的存储单元里。
+     （这组存储单元可以是连续的，也可以是不连续的）
+       举例：潜伏在敌方的情报员，为了不暴露每个情报员的身份，往往是单线联系，
+       只有上线知道下线是谁。正常情况下，情报是可以顺利上传下达，
+       但是如果某个链条中结点的同志牺牲了，那就麻烦了
+       因为其他人不知道上线或者下线是谁。
+     3)索引存储
+     4)Hash（散列）存储
+       例如。存放一组数据 1,5,12,14。使用数组a[0] = 1, a[1] = 5, a[2] = 12, a[3] = 14
+             采取散列存储。通过key值计算存放元素地址。函数f(key) = key%5
+             	f(1) = 1          hash[1] = 1
+             	f(5) = 0          hash[0] = 5
+             	f(12) = 2         hash[2] = 12
+             	f(14) = 4         hash[4] = 14
+             如果用户需要查找元素14是否存在。
+             如果是数组，非常简单，使用for循环，依次遍历对比即可。查找四次，就可以找到
+             如果是hash，将14带入到函数f(key) = key%5中，映射出地址hash[4]=14，进行对比，只找了一次就找到了
+       这是hash的理想情况，还会出现冲突问题，这个我们可以自己下去研究，就不讲了。
+
+
+学习方法：画图搞清逻辑结构，然后构造存储结构，定义相应操作，最后写代码
+
+要free的情况：删除结点，出队，出栈。
+
+学了：顺序表，单链表+循环链表，顺序栈，链式栈，顺序循环队列，链式队列
+      二叉树，邻接矩阵，邻接表。
+
+
+一、顺序表(包含数组的结构体)：方便查找
+<1>数据类型
+
+#define MAX 5
+
+typedef int DataType;
+
+typedef struct
+{
+		DataType buf[MAX]; //数组中保存顺序表中的数据元素
+		int n; //保存当前顺序表中实际存放元素个数
+}Seqlist;
+
+<2>操作：创建，判满，判空，遍历查找，排序（交换），有序插入，删除
+
+<3>难点：插入，删除
+1.顺序表指定位置插入思路：
+//1.判断数据是否已经插满，若是插满了，则不能继续插入了
+
+//2.判断用户提供的插入位置是否合法。
+//如果不合法，结束函数，返回-1
+
+//3.合法
+//循环移动从插入位置到最后一元素位置间的元素，依次后移一位
+//插入元素的下标cout = post - 1
+//循环从从最后一个元素开始，依次向后移动1位，然后在cout的位置，
+// 添加新的元素
+
+2.顺序表删除思路：
+
+//		1.将一个数组视为两个数组，单层循环
+//			用两个变量i和j来判断，若是数据不是data则，存入数组。
+//		2.判断删除元素是否存在	
+// 		3.删除之后更新l->n
+
+
+
+
+
+
+
+二、链表
+<1>实质：带头结点的单向链表（单链表最后指向NULL，循环链表最后指向head）
+数据类型的设计
+
+头结点：数据域不认为存储有效数据
+尾结点：指针域为NULL，作为链表结束的标志
+
+链式存储的数据类型设计
+
+typedef int DataType; //结点存储数据的数据类型
+
+typedef struct node
+{
+		DataType  data;//存储的数据
+		struct node *next;//存储下一个结点的首地址
+}linknode,*linklist;
+
+//linknode <===>struct node
+//linklist<===>struct node *
+
+<2>操作：创建，判空，删除，头插法，尾插法，有序插入，排序，
+				 逆置（删尾插头法），输出
+
+<3>难点：删除，有序插入，排序，逆置
+1.链表头插法思路：在头节点后插入新节点
+int insert_head_linklist(linknode *head,DataType data)
+{
+		//1.为新节点在堆区分配空间，用指针temp来保存
+		//2.把data数据填充到temp的数据域	
+		
+		//3.在头结点之后插入数据
+		//<1>先让新节点的指针域保存头结点的指针域
+		//<2>再让头节点的指针与保存新节点的首地址
+			
+		return 0;
+}	
+
+2.链表尾插法思路（在最后一个节点后插入新节点）
+int insert_tail_linklist(linknode *head,DataType data)
+{
+			//1.为新结点分配空间，用temp保存首地址
+			
+			//2.将数据data插入到新节点的数据域
+			
+			//3.循环找到最后一个结点p
+			
+			//4.在尾结点之后插入数据
+			//<1>先让新结点的指针域保存尾结点的指针域
+			//<2>让尾结点的指针域保存新结点的首地址
+			  
+			 return 0;
+}
+
+3.链表有序插入思路（找到插入位置前一结点(指向当前结点，但比较后一结点数据)）
+int insert_order_linklist(linknode *head,DataType data)
+{
+		 linknode *tmep = NULL;
+		 linknode *p = head;
+		//1.为新结点分配空间，用temp保存首地址
+		//2.将插入数据存放数据新结点数据域
+	  
+	  //3.循环找到插入位置前一个节点,p。
+	  //注：p指向当前节点，我们比较是后一个节点的数据p->next-data
+	  		
+	  		
+	  //4.在p节点的后面插入数据。
+	  //  <1>先让新节点的指针域保存p节点的指针域
+	  //	<2>p的指针域名保存新结点的首地址。
+		return 0;	
+}
+
+4.链表删除所有的数据思路：
+int cleanup_linklist(linknode *head)
+{
+		 linknode *q = NULL;
+		 linknode *p = head;
+		 
+		 //从头结点开始遍历链表，每找到一个结点，
+		 用q保存该节点的地址。然后释放掉它
+			
+}
+
+5.链表排序思路：可以使用我们前面学习的冒泡排序的思想来进行排序
+1、获得链表表中所有元素的个数
+2、p = head->next可以表示链表中第一个元素的地址。
+   p = p->next 依次可以遍历链表中每一个元素。（类似于a[i]）
+
+6.链表逆置思路(陆续头插法): 
+//例如：1 2 3 4 5，要求大家变成5 4 3 2 1
+//思路: 从第二个有效数据开始，依次把数据向后头结点后
+//			插入，插入完毕之后，第一个有效数据的结点就是
+//			我们最后的一个结点。
+int reverse_linklist(linknode *head)
+{
+	//思路：1、判断链表是否是空链表，若是空链表则返回-1
+	//			2、定义指针变量p，保存第二个有效数据结点的地址。
+	//			3、并把第一个有效数据结点的指针域置为NULL
+	
+	//			4、从p开始遍历链表，用q保存p后面一个结点，并插入到头结点后
+}
+
+7.链表输出思路:
+		//遍历所有节点，当指针域不为空的时候，
+		//每遍历一个节点，就输出一个数据
+(1)开始时p->next指向第一个有效结点，p->next == NULL时停止，
+   遍历完成后p指向最后一个结点
+int printf_linklist(LinkNode *head)
+{
+    LinkNode *p = head;
+    while(p->next != NULL)
+    {
+        printf("%d ",p->next->data);
+        p = p->next;
+    }
+    putchar('\n');
+    return 0;
+}
+(2)开始时p指向第一个有效结点，p == NULL时停止，
+   遍历完成后p指向NULL
+int printf_linklist(LinkNode *head)
+{
+    LinkNode *p = head->next;
+    while(p != NULL)
+    {
+        printf("%d ",p->data);
+        p = p->next;
+    }
+    putchar('\n');
+    return 0;
+}
+
+(3)不带头结点的输出方法
+与带头结点不同的是:带头需要先输出第一个有效结点数据，然后按照带结点的方式输出
+
+或者直接输出
+int printf_linklist(LinkNode *head)
+{
+    LinkNode *p = head;
+    while(p != NULL)
+    {
+        printf("%d ",p->data);
+        p = p->next;
+    }
+    putchar('\n');
+    return 0;
+}
+
+8.删除多个相同数据的结点。(遍历完成就结束删除)	
+int delete_samedata_node(linknode *head,DataType data)
+{
+			//1.定义两个两个指针，p = head,q = head->next。
+			
+			//2.让q循环遍历链表，当q != NULL的时候，判断
+			//	q->data 是否与10相等，若是相等的话，则让
+			//	p的指针域保存q的下一个结点的地址，然后释放
+			//	q，并且更新q的值为p->next。 否则，若是不相等
+			//	的话则让p = p->next ,q = q ->next
+}
+
+注：删除一个结点时要判断遍历是否完成（即是否找到了要删除的结点），
+    若是没找到就不能执行删除操作。
+
+
+
+
+
+
+三、顺序栈
+
+<1>特点：LIFO后进先出-------头进头出 
+数据类型设计
+typedef int  DataType；//数据元素的类型
+
+#define MAX 10
+typedef struct
+{
+		DataType buf[MAX]; //数组存储数据元素
+		int top;	//记录当前栈顶元素的下标（有效数据最后一个元素的下标）
+}SeqStack;
+
+
+<2>操作：创建（s->top = -1），判空（s-top == -1），判满(s->top == MAX - 1),
+          入栈，出栈，输出
+
+<3>难点：入栈，出栈，排序，逆置
+1.入栈思路：先移动top，再插入数据
+int push_seqstack(Seqstack *s,DataType data)
+{
+
+}
+
+2.出栈思路：先取出数据，在移动top，返回出栈的数据
+int pop_seqstack(Seqstack *s)
+{
+		
+}
+
+
+
+
+
+四、链式栈
+<1>实质：栈头 + 不带头结点的链表
+
+数据类型的设计
+//typedef char DataType; 链表有效数据的数据类型
+
+//结点的类型
+typedef struct node
+{
+	DataType  data;//链表中保存的数据
+	struct node *next;//保存下一个结点的地址。
+}LinkNode；
+
+//栈头的数据类型
+typedef struct
+{
+		int n;			//记录栈中有效元素的个数
+		struct node *top;  //指向栈顶结点的指针
+}Linkstack；
+
+
+<2>操作：创建 ，判空 ，判满,入栈，出栈，输出
+
+
+
+<3>难点：入栈，出栈
+
+1.入栈（类似于链表的头插法）
+int push_linkstack(Linkstack *s,DataType data)
+{
+		1.为（链表）新结点在堆区分配空间，用temp保存 
+    2.把数据data存储到temp中
+    3.通过栈顶指针插入链表中
+    4.更新s中栈中数据n的值。s->n++;
+    
+    return 0；
+}
+
+2.出栈，返回栈中的数据
+DataType pop_linkstack(Linkstack *s)
+{
+		LinkNode *temp = NULL;
+		DataType data = 0;
+    1.用temp 保存原栈顶的结点首地址
+    2.取原栈顶结点数据
+    3.更新栈顶指针
+    4.释入原栈顶空间
+    5.s->n--;
+    6.return 值
+}
+
+<4>栈的应用举例 
+栈在表达式计算过程中的应用 ：建立操作数栈和运算符栈。运算符有优先级。
+规则：
+	(1)自左至右扫描表达式，凡是遇到操作数一律进操作数栈。
+	
+	(2)当遇到运算符时，如果它的优先级比运算符栈栈顶元素的优先级高就进栈。
+		反之，取出栈顶运算符和操作数栈栈顶的连续两个操作数进行运算，并将结果存入操作数栈，
+		然后继续比较下一个运算符与栈顶运算符的优先级。
+		
+	(3)左括号一律进运算符栈，右括号一律不进运算符栈，
+	取出运算符栈顶运算符和操作数栈顶的两个操作数进行运算，
+	并将结果压入操作数栈，直到取出左括号为止。
+思路：operator栈中存在的情况（不加括号）有两种：一种是（下-/+和上*/）
+			另一种是只有（-/+，因为下*/和上-/+或下-/+和上-/+这几种情况都要将前一个
+			运算符拿出来计算）
+
+
+
+
+
+
+
+
+	
+五.顺序循环队列
+<1>特点：尾入头出的线性表(FIFO)。
+
+数据类型的设计
+#define MAX 10
+
+typedef int DataType;
+
+typedef struct
+{
+		DataType buf[MAX];//存放数据
+		int front;// 记录队头元素的下标
+		int rear;//记录队尾元素下一个元素的下标
+}LoopQueue；
+
+总结：
+（1）front  记录队头元素的下标
+（2）rear   记录队尾元素下一个元素的下标
+
+（3）队空条件：front == rear;
+
+（4）队满条件：front == (rear + 1) % MAX;
+
+（5）更新front和rear的方法：
+		front == (front + 1) % MAX;
+		rear == (rear + 1) % MAX;
+
+<2>操作：创建,判空，判满,入队，出队，输出
+
+
+<3>难点：创建,判空，判满,入队，出队
+1.创建空的循环队列，并获得其首地址
+LoopQueue； *create_empty_loopqueue()
+{
+		//为循环队列在堆区分配空间，q保存空间首地址
+		
+		//刚开始的时候front，和rear都指向了下标为0的位置
+		
+		//返回q；
+}
+
+2.判断循环队列是否为空，为空则不能出队了
+//front与rear的值相等则为空，
+int is_empty_loopqueue(LoopQueue； *q)
+{
+		//判断front和rear是否相等
+		
+		//相等则返回1，不相等则返回0
+}
+
+3.判断循环队列是否满了，没有满则可以插入数据
+//front的值与(rear + 1) % MAX相等
+int is_full_loopqueue(LoopQueue； *q)
+{
+		//判断front与（rear + 1） % MAX是否相等，
+		//相等返回1，不相等返回0
+}
+
+4.入队，先插入数据，再更新rear的值
+int enter_loopqueue(LoopQueue； *q,DataType data)
+{
+		//在buf中q->rear的位置插入数据data。
+		
+		//然后移动rear，更新rear的值。
+}
+
+5.出队 先取出数据，在更新front的值.
+每次找到要出队的数据，然后返回。
+DataType delete_loopqueue(LoopQueue； *q)
+{
+		DataType data = 0;
+		//取出数据把值给我们的data。
+		
+		//然后更新rear的值
+		
+		//把获得的data的值返回。
+
+}
+
+
+
+
+六、链式队列
+
+<1>链式队列本质：队列头 + 带头结点的链表
+
+数据类型
+
+typedef int DataType;
+
+//存储数据结点的类型
+typedef struct node
+{
+	  DataType data; //存储的数据
+	  struct node *next; //下一个结点的地址
+}linknode;
+
+//队列头
+typedef struct
+{
+    struct node *front;//front指向头结点的地址（链表中的head）
+    struct node *rear; //rear指向尾结点的地址
+    								   （即最后一个结点，数据域有值，指针域为NULL）
+}linkqueue;	
+	
+
+<2>操作：创建,判空，判满,入队，出队，输出
+
+<3>难点：创建,判空，判满,入队，出队
+1.创建空的链式队列
+linkqueue *create_empty_linkqueue()
+{
+		//新创建一个队头，并分配空间。用q保存首地址
+		
+		//在创建一个链表头，头结点的指针域置为NULL
+		
+		//队头的q->front和q->front都保存头结点的首地址
+		
+		//返回队列头首地址
+}
+
+2.判断链式队列是否为空，即front和rear的值是否相等
+int is_emtpy_linkqueue(linkqueue *q)
+{
+		return q->front == q->rear;
+}
+
+3.入队，类似于链表的尾插法
+int enter_linkqueue(linkqueue *q,DataType data)
+{
+		//创建一个新的链表节点，用temp保存，并分配空间
+
+	  //类似于单链表的尾插法，每次创建都是尾结点，
+	  //把temp指针域置为NULL,利用尾结点q->rear插入q->rear->next=temp
+	  
+	  //更新rear的值
+	  
+	  return 0;
+}
+
+
+4.出队，删头法，删除前一个结点，出后一个结点的数据
+DataType delete_linkqueue(linkqueue *q)
+{
+		linknode *temp = NULL;
+		
+		//思路：删除原头结点，出后一个结点的数据。
+		//      使后一个结点成为新的头结点
+		
+		//1.用temp保存原来头结点的首地址
+		
+		//2.更新q->front,让他指向后一个数据
+		
+		//3.释放temp的空间
+		
+		//4.返回新的头结点的数据
+}
+或者不删头：
+DataType delete_linkqueue(linkqueue *q)
+{
+		linknode *temp = NULL;
+		int data = 0；
+		//思路：删除头结点后的有效数据，
+		// 若删到最后，就用front的值更新rear
+		
+		//1.用temp保存原来头结点后的第一个有效数据的地址
+		    将数据暂存在data中
+		//2.更新q->front,让他指向后一个数据q—>front->next
+		
+		//3.释放temp的空间
+
+		//4.若q—>front->next == NULL;用front的值更新rear
+		
+		//5.返回data里的的数据
+}
+
+<4>队列应用举例(代码演示)
+  球钟问题：利用球的移动来记录时间。由分钟指示器，五分钟指示器，小时指示器组成。球保存在球队列中。
+  思路：
+  [1]建立链式队列和链式栈。
+  [2]创建三个指示器栈。
+  [3]创建初始球队列。27个球入队列。
+  [4]判定函数。判定初始状态。
+  [5]入栈。出栈入队列。
+  [6]注意产生的bug：1.入栈条件 f_stack->pop < 4 , m_stack->pop < 11, h_stack->pop < 11
+                    2.临界时间 11:59分时。所有栈中元素出栈入队列。记得最后一个球入队列。
+
+
+七、二叉树
+详见《二叉树的基本概念》
+<1>完全二叉树的特点：
+
+对于编号为i( 1<= i <= n)的结点（上图中n = 11）：
+(1)左孩子存在：2 * i <= n(节点的个数)，左孩子编号2 * i
+(2)右孩子存在：2 * i + 1 <= n,右孩子编号 2 * i + 1
+
+顺序存储[完全二叉树]:1 2 ? 4 5 ? ? ? ? 10 11-----数组
+
+链式存储[完全二叉树]
+数据类型的设计
+
+typedef  char DataType; //二叉树数据结点的数据乐行
+
+typedef struct bnode
+{
+	  DataType data;  //保存的字符数据
+	 	struct bnode *lchild;		//左孩子的地址
+	 	struct bnode *rchild;		//右孩子的地址
+}bitree_t;
+
+<2>操作：创建，遍历
+
+<3>难点：创建，遍历
+1.创建二叉树思路：定义一个二叉树创造函数，然后根据完全二叉树的规律递归调用自己。
+//创建一个新的结点，填充数据
+btree_t *malloc_bnode(DataType data)
+{
+	btree_t *root = NULL;	
+
+	root = (btree_t *)malloc(sizeof(btree_t));
+	if(NULL == root)	
+	{
+		printf("malloc is fail\n");	
+		return NULL;
+	}
+	memset(root,0,sizeof(btree_t));
+	root->data = data; 
+	root->lchild = NULL;
+	root->rchild = NULL;
+	return root;
+}
+//a---存在结点数据的数组
+//num----当前结点的编号
+//n---结点的总个数
+btree_t *create_binarrytree(char a[],int num,int n)
+{
+	btree_t *root = NULL;
+
+	root = malloc_bnode(a[num]);
+
+	//完全二叉数的特点：左孩子存在： 2 * num <= n
+	//                  右孩子存在:  2 * num + 1 <= n;
+	
+	if(2 * num <= n)
+	{
+		root->lchild = create_binarrytree(a,2 * num,n); 
+	}
+
+	if(2 * num + 1 <= n)
+	{
+		root->rchild = create_binarrytree(a,2 * num + 1,n);	
+	}
+
+	return root;
+}
+
+
+	
+2.二叉树遍历规则：
+注意：访问左孩子和右孩子时需要递归调用遍历规律。
+(1)先序遍历：先访问根结点（输出），然后再访问左孩子（遇空则返回输出根结点数据），
+             然后再访问右孩子（遇空则返回输出根结点数据）。
+void preOrder(btree_t *root)
+{
+	if(NULL == root)
+		return ;
+	printf("%c ",root->data);
+	preOrder(root->lchild);
+	preOrder(root->rchild);
+	return ;
+}
+								 
+(2)中序遍历：先访问左孩子（遇空则返回输出根结点数据），然后再访问根结点（输出），
+             然后再访问右孩子（遇空则返回输出根结点数据）。
+void inOrder(btree_t *root)
+{
+	if(NULL == root)
+		return ;
+	inOrder(root->lchild);
+	printf("%c ",root->data);
+	inOrder(root->rchild);
+	return ;
+}
+
+						
+(3)后序遍历： 先访问左孩子（遇空则返回输出根结点数据），
+							然后再访问右孩子（遇空则返回输出根结点数据），
+         			然后再访问根结点（输出）。
+
+//后序遍历：左右根
+void postOrder(btree_t *root)
+{
+	if(NULL == root)
+		return ;
+	postOrder(root->lchild);
+	postOrder(root->rchild);
+	printf("%c ",root->data);
+	return ;
+}
+
+
+
+(4)层次遍历：从上到下一层层的遍历每一个结点。
+             这个和我们队列的思想（先进先出）比较符合。
+						 因此，二叉树的层次遍历可以设置队列来操作。
+二叉树层次遍历的操作：
+//先创建队列
+//层次遍历
+(1)先把根结点入队
+(2)当队列不为空的时候，循环出队，然后判断左孩子和右孩子是否存在，存在则入队.
+	 当队列为空的时候，退出循环。
+主要代码：
+		enter_linkqueue(root);        //root为二叉树根结点                   A
+    while(!is_empty_linkqueue(q))                                     B      C   
+    {                                                               D   E  F 
+       temp =  delete_linkqueue();
+       printf("%c",temp->data);  //输出出队元素。
+
+       //判断出队节点的左孩子是否存在，存在在入队
+       if(temp->lchild != NULL)
+       {
+            enter_linkqueue(q,temp->lchild);
+       }
+
+       //判断出队节点的右孩子是否存在，存在则将右孩子入队
+       if(temp->rchild != NULL)
+       {
+        enter_linkqueue(q,temp->lchild);
+        }
+    }
+
+代码结合图形的步骤： 
+首先，A入队，A有左孩子和右孩子，A出队，把B，C入队。队列中剩BC              A
+然后，判断B是否有左孩子和右孩子，B出队，D入队，E入队。队列中剩CDE       B      C
+然后，判断C是否有左孩子和右孩子，C出队，F入队。队列中有DEF            D   E   F 
+然后，判断D是否有左孩子和右孩子，D出队，队列中剩EF
+然后，判断E是否有左孩子和右孩子，E出队，队列中剩F
+然后，判断F是否有左孩子和右孩子，F出队，队列为空。循环结束
+
+
+<4>哈夫曼编码思路：
+buf[1024] = "ABABAAC";
+A:4
+B:2
+C:1
+(1)统计字符串中有哪些字符？以及该字符出现的次数!（buf[1024]--->fre[65] = 4）
+
+提问：我们的字符出现了，应该存在在哪里？什么拥有先进先出的特点？
+答案：队列
+
+提问：我们有字符需要先入队，有些字符需要后入队，而我们取出数据的时候需要
+		  按照从小到大的顺序取出，应该如何设计？
+答案：我们入队的时候，按照权值大小有序入队。需要创建拥有队列特点的有序链表。
+			有序的填充数据。
+			
+(2)创建huffman队列，有序填充数据。(以链表尾插法的方式插入，以队列的方式读出)
+
+(3)一次取出两个最小的数据，两两合并，创建huffman树。并把新的结点有序入队。
+
+(4)从根结点开始对所有的结点进行左0右1的操作进行编号（层次遍历）。
+
+(5)所有的叶子结点就是我们对应的数据。对数据进行编码。最后输出所有的数据
+
+(6)根据我们的编码格式，来解码数据
+
+
+
+
+
+八、邻接矩阵：将存在边的关系的两个顶点用1来表示，没有关联的两个顶点用0来表示。
+详见<<图的基本概念了解>>
+<1>图的存储
+G = {V,{E}}  V--表示顶点的集合  E---表示边的集合。
+思考：应该定义什么样的数据类型来表示邻接矩阵？
+V----一维数组
+E----二维数组
+#define N 5
+//存储顶点编号的数据类型（0,1,2,3）
+typedef int vertex_t;
+
+//图中顶点相关联边的存储。
+
+typedef struct
+{
+		//存储顶点信息的数组
+		vertex_t v[N];
+		//存储顶点关系集合的二维数组
+		int matrix[N][N]
+}graph_t;
+
+
+<2>操作：创建，输入，输出，遍历
+
+
+<3>难点：创建，输入，输出，遍历
+1.创建空的图，保存顶点信息
+graph_t *create_graph()
+{
+	graph_t *g = NULL;
+	int i = 0;
+	g = (graph_t *)malloc(sizeof(graph_t));
+	memset(g,0,sizeof(graph_t));
+	for(i = 0;i < N;i++)
+	{
+		g->v[i] = i;	
+	}
+	return g;
+}
+
+2.从键盘输入有关系的边，有关系置为1，没有关系置为0
+void input_edge(graph_t *g)
+{
+	int i = 0,j = 0;
+	//(V0,V1) (V0,V2) (V0,V3) ..(V3,V0)
+	printf("Input edge link (V0,V1) (V0,V2)...\n");
+
+	//scanf("%d,%d",&a,&b); ===>10,20
+	while(scanf("(V%d,V%d)",&i,&j) == 2)
+	{
+		g->matrix[i][j] = g->matrix[j][i] = 1;	
+		getchar();//读取多余的空格
+	}
+
+	//清除缓冲区
+	while(getchar() != '\n');
+	return ;
+}
+
+3.输出
+int print_matrix(graph_t *g)
+{
+	int i = 0,j = 0;	
+	printf("   ");
+	for(i = 0;i < N;i++)
+	{
+		printf("V%-2d",i);	
+	}
+	putchar('\n');
+
+	for(i = 0;i < N;i++)
+	{
+		printf("V%-2d",i);	
+		for(j = 0;j < N;j++)
+		{
+			printf("%-3d",g->matrix[i][j]);	
+		}
+		putchar('\n');
+	}
+	return 0;
+}
+
+4.遍历
+详见《3.图的遍历》
+
+
+
+
+
+
+
+九、邻接表
+
+<1>本质：指针数组 + 无头结点的链表
+注：构建的是有向图，则链表的第一个字符不能被更改，相当于头结点。
+
+数据类型的设计
+
+//顶点信息的数据类型
+typedef  int vertex_t;
+
+//顶点类型和链表结点的类型
+typedef struct node
+{
+		vertex_t data;
+		struct node *next;
+}LinkNode;
+
+//我们需要在堆区分配空间,而我们堆区分配的空间是指针数组类型。
+//指针数组的的首地址，我们定义定义二级指针保存。
+
+typedef LinkNode **graph_t;
+
+
+<2>操作：创建，输入，输出，遍历
+
+<3>难点：创建，输入，输出，遍历
+1.创建邻接表
+graph_t create_graph()
+{
+	graph_t g = NULL;
+	int i = 0;
+
+	//1.在堆区构建N个元素的指针数组，用二级指针保存
+	g = (LinkNode **)malloc(sizeof(LinkNode *) * N);
+
+	for(i = 0;i < N;i++)
+	{
+		g[i] = (LinkNode *)malloc(sizeof(LinkNode));
+		g[i]->data = i;
+		g[i]->next = NULL;
+	}
+	
+	return g;
+}
+
+2.输入边的信息
+int input_arc(graph_t g)
+{
+	int i = 0,j = 0;
+	//(V0,V1) (V0,V2) (V0,V3) ..(V3,V0)
+	printf("Input edge link (V0,V1) (V0,V2)...\n");
+
+	//scanf("%d,%d",&a,&b); ===>10,20
+	while(scanf("(V%d,V%d)",&i,&j) == 2)
+	{
+		//把链表有序插入
+		insert_order_linklist(g[i],j);    //实质就是链表的有序插入，见下面
+		getchar();//读取多余的空格
+	}
+
+	//清除缓冲区
+	while(getchar() != '\n');
+	return ;
+
+}
+//有序插入
+int insert_order_linklist(LinkNode *head,vertex_t data)
+{
+	LinkNode *temp = NULL;
+	LinkNode *p = head;
+
+	temp = (LinkNode *)malloc(sizeof(LinkNode));
+
+	temp->data = data;
+
+	while(p->next != NULL && p->next->data < data)
+	{
+		p = p->next;	
+	}
+
+	temp->next = p->next;
+	p->next =temp;
+	return 0;
+}
+
+3.输出（实质是第一个元素先输出+带头结点的链表输出==不带头结点的链表的输出）
+//输出链表信息(带头结点的链表的输出)
+int print_linklist(LinkNode *head)
+{
+	LinkNode *p = head->next;	
+
+	while(p != NULL)
+	{
+		printf("V%d ",p->data);	
+		p = p->next;
+	}
+	putchar('\n');
+
+	return 0;
+}
+//输出边的信息
+int print_adjlist(graph_t g)
+{
+	int i = 0;
+
+	for(i = 0;i < N;i++)
+	{
+		printf("V%d----> ",g[i]->data);	  //输出第一个元素的信息以设定方向
+		print_linklist(g[i]);
+	}
+	return 0;
+}
+
+4.遍历：被老师吃掉了！！！
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

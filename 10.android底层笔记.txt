@@ -1,0 +1,583 @@
+课程：
+了解--启动--系统开发--定制
+
+核心参数（库）-上
+框架代码-下
+
+
+dvm-->art(android Runtime)
+--将时间移到了安装上（字节码->机器码）
+
+框架工程师--写一组类和方法，组成一个框架，提供给应用工程师
+
+
+jvm--class，栈
+dalvik---dex（优化odex--optimized dex），寄存器
+--deodex（odex-->dex）当修改
+
+
+二次开发：
+添加一个自定义服务：
+1.添加修改：
+添加hello文件夹（hello.c+Android.mk）
+修改init.rc
+---sevice ...
+
+2.配置：
+source--设置参数（环境变量）
+lunch--设置平台
+
+3.编译：
+m--从顶层开始编译
+mm--编译当前目录
+mmm--编译指定目录或文件：mmm hello
+
+make ...--生成镜像文件
+make snod-->生成system.img
+make ramdisk-nodeps---->生成ramdisk.img
+make bootimage-nodeps---->生成boot.img
+
+
+4.打包：
+pack -d
+
+ctags -R
+android布局文件和配置文件异曲同工
+
+启动android系统：
+在内核启动搭建好C语言环境并初始化内核模块之后运行init进程：
+-----init.c
+
+init进程解析完init.rc后会生成两个链表
+action_list和services_list
+
+1.获得硬件参数，处理bootloader传递给
+内核的参数，加载/default.prop到属性内存区域
+在/dev目录下生成__null__设备节点
+解析init.rc文件生成action_list和services_list
+init_parse_config_file("/init.rc");
+
+2.创建action(同时加到action_list中)
+或在action_list中寻找
+需要的action添加到action_queue
+early-init--
+wait_for_cold_boot_done
+mix_hwrng_into_linux_rng
+keychord_init
+console_init
+init---
+property_service_init
+signal_init
+queue_property_triggers
+
+3.遍历action_queue和services_list
+并执行其中的action和service
+---执行action中的命令（触发action和service）
+有core类，main类，late_start类相关服务
+重要启动的服务是zygote
+--通过fork()函数创建子进程，然后调用execve函数执行这个服务
+for
+	execute_one_command
+	restart_processes
+	if
+	for
+	----探测文件描述符
+	（子进程是否死亡，按下快捷键，修改属性），
+			让poll函数监视他们是否
+			有相应的事件触发，如果有，
+			则调用相关函数处理
+init进程守护service运行，
+init进程修改属性值
+
+
+
+
+
+
+
+1.父进程zygote进程：
+init进程创建zygote进程(app_process程序)（c语言写的）
+创建虚拟机dalvik
+预加载系统资源和系统类zygoteinit.class
+创建SystemServer进程（创建线程，运行系统服务，启动launcher--广播Home意图）
+进入监听状态runSelectLoop()（创建子进程运行app）
+
+局部：
+在虚拟机中加载zygoteinit.class，调用main方法（进入了java世界）
+registerZygoteSocket()
+--绑定套接字，接收android应用程序的应用请求
+preload()--加载外界资源
+StartSystemServer()--启动SystemServer子进程
+（zygote孵化出来的第一个进程）
+运行runSelectLoop()-
+--抛出异常后，执行异常处理代码caller.run(),然后返回
+caller.run()---运行android应用程序的main()方法
+
+2.子进程SystemServer进程：
+-->Core Platform Service和Hardware Service
+
+
+android.mk分析编写：
+系统变量：
+LOCAL_PATH
+CLEAR_VARS
+LOCAL_MODULE
+LOCAL_SRC_FILES
+LOCAL_MODULE_PATH
+LOCAL-CERTIFICATE
+LOCAL_PATH
+LOCAL_C_INCLUDES
+BUILD_EXECUTABLE
+BUILD_SHARED_LIBRARY---将模块编译成动态库.so
+BUILD_STATIC_LIBRARY---将模块编译成静态库.a
+
+编译模块下的多个文件
+1.将需要编译的文件名都指定在LOCAL_SRC_FILES变量
+2.调用android编译系统的函数，
+获取当前模块下所有需要编译的函数
+all-c-files-under
+all-subdir-c-files
+
+
+
+链接库：
+1.链接android系统自带的库
+LOCAL_SHARED_LIBRARY--引用系统的动态库
+LOCAL_STATIC_LIBRARY--引用系统的静态库
+
+2.链接第三方库：
+LOACL_LDFLAGS
+-L指定需要链接库所在的路径
+-l指定库的名字（不包括后缀）
+如：LOACL_LDFLAGS += -L$(LOCAL_PATH)/LIB/ -ladd sub
+
+
+linux中静态库和动态库的区别
+一、不同
+库从本质上来说是一种可执行代码的二进制格式，可以被载入内存中执行。库分静态库和动态库两种。 
+1. 静态函数库libxxx.a
+静态链接中,链接程序将需要的目标代码从
+库文件拷贝到执行文件中
+
+2. 动态函数库libxxx.so
+动态链接是执行文件在执行过程中根据需要从库文件中
+装入并使用目标代码
+
+二、相同
+都是由*.o目标文件生成
+库是给别人提供的函数集合
+
+使用静态库的好处
+1.模块化，分工合作
+2.避免少量改动经常导致大量的重复编译连接
+3.也可以重用，注意不是共享使用
+
+动态库使用有如下好处：
+1.可以将最终可执行文件体积缩小
+2.多个应用程序共享内存中得同一份库文件，节省资源
+3.可以不重新编译连接可执行程序的前提下，
+更新动态库文件达到更新应用程序的目的。
+
+
+
+预置编译：
+指定编译好的文件目录和类型和一些预置编译的参数
+系统就会帮我们把我们编译好的东西放在android系统
+指定的相应目录下
+
+
+
+HAL:
+hardware:计算机硬件
+3：
+hw_module_t--硬件对象(指向hw_module_methods_t)
+hw_module_methods_t--硬件对象的open方法描述结构体
+hw_device_t--硬件的操作接口
+
+2：
+#define HAL_MODULE_INFO_SYM   HMI
+#define HAL_MODULE_INFO_SYM_AS_STR   "HMI"
+
+1:
+int hw_get_module(const char *id，const struct hw_module_t **module)
+通过硬件id拿到硬件对象(hw_get_module)
+，调用open方法，返回硬件对象的操作接口，
+从而控制硬件
+--open方法被hw_module_methods_t结构体封装
+--操作接口被hw_device_t结构体封装
+
+寻找过程:
+id(led)-->动态库
+传给hw_get_module的id==led
+动态库的名字前缀（led.default.so）==led
+hw_module_t里的成员id==led(检验)
+
+动态库-->硬件对象
+HMI--dlopen,dlsym(返回硬件对象地址)
+
+可以仿造local_time_hw.c来写
+主要是在填充三个结构体
+
+机制：结构体或类
+结构体功能(描述的是什么)-->结构体之间的关系
+--->结构体成员
+
+使用函数指针是为了给上层提供函数接口，制定规范，框架
+---声明函数接口
+取消高亮：nohl
+
+
+JNI：Java Native Interface,java本地调用
+--可以让java代码调到C/C++写的接口，
+也可以在C/C++回调java代码
+
+--java层只需声明接口，这个接口具体的实现
+是通过C/C++语言来编写的
+--程序员只需关系它们如何关联起来
+
+静态注册(函数名固定)：
+java程序员：
+1.通过native修饰成员函数接口，表明这个函数
+是由C/C++来实现的
+2.在静态块通过System.loadLibrary()加载对应的动态库
+3.编译
+
+C程序员：
+1.javah -jni 类名(从.class文件中得到C/C++中实现的函数造型)
+javac Test.java
+javah -jni Test
+
+2.实现头文件声明的函数（固定格式）
+JNIEXPORT JNICALL是空的宏，只取标志作用
+JNIEXPORT void JNICALL Java_Test_helloWorld
+(JNIEnv *env,jobject obj)
+3.生成动态库...
+
+建立测试类Test.java 载入动态链接库，调用本地方法
+LD_LIBRARY_PATH
+java -Djava.library.path=路径 Test
+
+静态注册步骤：
+1.在java层的静态块通过System.loadLibrary()加载对应的动态库
+2.在jni层实现java层的native方法
+
+
+
+动态注册：
+1.实现java服务层native函数
+通过签名的方法把java的native函数和C/C++关联起来
+typedef struct{
+	char *name; // java层native函数名
+	char *signature;//签名信息，用字符串表示，
+									//是返回值和参数的组合
+									//(用以区分重载的函数)
+	void *fnPtr; //记录jni层需要实现的函数名，
+							 //即函数的入口地址
+}JNINativeMethod;
+
+2.自定义动态注册JNI函数
+	resister_jni_function(JNIEnv *env)
+	通过JNIEnv动态注册JNI函数（JNIEnv *env）
+	找类-->注册类中定义的native方法（gMethods）
+		(*env)->FindClass
+		(*env)->RegisterNatives
+
+
+签名信息:
+java服务层的native函数：
+void testFunction(int a,short b,char c,
+String str,HelloWorld obj);
+jni层的签名信息：
+(ISCLjava/lang/String;LhelloWorld;)V
+--(参数1参数2..参数N)返回值
+
+生成签名信息：
+javap -s -p xxx(编译后的class类名)
+--将签名信息打印在终端
+
+
+2.关联java服务层native函数和jni层函数
+	----在jni层实现动态注册JNI_onLoad
+	1.获得JNIEnv环境（JavaVM *vm）
+		vm->GetEnv
+	2.调用动态注册JNI函数
+
+
+
+动态注册步骤：
+1.在jni层填充JNINativeMethod结构体
+2.在jni层实现java层的native方法
+3.在jni层实现JNI_onLoad函数
+4.在JNI_onLoad函数中完成动态注册
+
+
+
+AIDL：app与service之间的规范
+实现通信接口的类由系统生成
+我们只需定义接口(服务里的方法)和实现服务，并编译
+---app通过通信接口AIDL调用到服务的方法，
+服务的方法中又会调用本地方法
+
+IFarsightLedService.java
+androidL/out/target/common/obj/JAVA_LIBRARIES/framework_intermediates/src/core/java/android/os
+存在两个问题：
+设备文件和服务文件的权限问题
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  private static void runSelectLoop(String abiList) throws MethodAndArgsCaller {
+        ArrayList<FileDescriptor> fds = new ArrayList<FileDescriptor>();
+        ArrayList<ZygoteConnection> peers = new ArrayList<ZygoteConnection>();
+        FileDescriptor[] fdArray = new FileDescriptor[4];
+
+        fds.add(sServerSocket.getFileDescriptor());
+        peers.add(null);
+
+        int loopCount = GC_LOOP_COUNT;
+        while (true) {
+            int index;
+
+            /*
+             * Call gc() before we block in select().
+             * It's work that has to be done anyway, and it's better
+             * to avoid making every child do it.  It will also
+             * madvise() any free memory as a side-effect.
+             *
+             * Don't call it every time, because walking the entire
+             * heap is a lot of overhead to free a few hundred bytes.
+             */
+            if (loopCount <= 0) {
+                gc();
+                loopCount = GC_LOOP_COUNT;
+            } else {
+                loopCount--;
+            }
+
+
+            try {
+                fdArray = fds.toArray(fdArray);
+                index = selectReadable(fdArray);
+            } catch (IOException ex) {
+                throw new RuntimeException("Error in select()", ex);
+            }
+
+            if (index < 0) {
+                throw new RuntimeException("Error in select()");
+            } else if (index == 0) {
+                ZygoteConnection newPeer = acceptCommandPeer(abiList);
+                peers.add(newPeer);
+                fds.add(newPeer.getFileDescriptor());
+            } else {
+                boolean done;
+                done = peers.get(index).runOnce();
+
+                if (done) {
+                    peers.remove(index);
+                    fds.remove(index);
+                }
+            }
+        }
+    }
+
+
+
+
+
+  boolean runOnce() throws ZygoteInit.MethodAndArgsCaller {
+
+        String args[];
+        Arguments parsedArgs = null;
+        FileDescriptor[] descriptors;
+
+        long startTime = SystemClock.elapsedRealtime();
+
+        try {
+            args = readArgumentList();
+            descriptors = mSocket.getAncillaryFileDescriptors();
+        } catch (IOException ex) {
+            Log.w(TAG, "IOException on command socket " + ex.getMessage());
+            closeSocket();
+            return true;
+        }
+
+        checkTime(startTime, "zygoteConnection.runOnce: readArgumentList");
+        if (args == null) {
+            // EOF reached.
+            closeSocket();
+            return true;
+        }
+
+        /** the stderr of the most recent request, if avail */
+        PrintStream newStderr = null;
+
+        if (descriptors != null && descriptors.length >= 3) {
+            newStderr = new PrintStream(
+                    new FileOutputStream(descriptors[2]));
+        }
+
+        int pid = -1;
+        FileDescriptor childPipeFd = null;
+        FileDescriptor serverPipeFd = null;
+
+        try {
+            parsedArgs = new Arguments(args);
+
+            if (parsedArgs.abiListQuery) {
+                return handleAbiListQuery();
+            }
+
+            if (parsedArgs.permittedCapabilities != 0 || parsedArgs.effectiveCapabilities != 0) {
+                throw new ZygoteSecurityException("Client may not specify capabilities: " +
+                        "permitted=0x" + Long.toHexString(parsedArgs.permittedCapabilities) +
+                        ", effective=0x" + Long.toHexString(parsedArgs.effectiveCapabilities));
+            }
+
+
+            applyUidSecurityPolicy(parsedArgs, peer, peerSecurityContext);
+            applyRlimitSecurityPolicy(parsedArgs, peer, peerSecurityContext);
+            applyInvokeWithSecurityPolicy(parsedArgs, peer, peerSecurityContext);
+            applyseInfoSecurityPolicy(parsedArgs, peer, peerSecurityContext);
+
+            checkTime(startTime, "zygoteConnection.runOnce: apply security policies");
+
+            applyDebuggerSystemProperty(parsedArgs);
+            applyInvokeWithSystemProperty(parsedArgs);
+
+            checkTime(startTime, "zygoteConnection.runOnce: apply security policies");
+
+            int[][] rlimits = null;
+
+            if (parsedArgs.rlimits != null) {
+                rlimits = parsedArgs.rlimits.toArray(intArray2d);
+            }
+
+            if (parsedArgs.runtimeInit && parsedArgs.invokeWith != null) {
+                FileDescriptor[] pipeFds = Os.pipe();
+                childPipeFd = pipeFds[1];
+                serverPipeFd = pipeFds[0];
+                ZygoteInit.setCloseOnExec(serverPipeFd, true);
+            }
+
+            /**
+             * In order to avoid leaking descriptors to the Zygote child,
+             * the native code must close the two Zygote socket descriptors
+             * in the child process before it switches from Zygote-root to
+             * the UID and privileges of the application being launched.
+             *
+             * In order to avoid "bad file descriptor" errors when the
+             * two LocalSocket objects are closed, the Posix file
+             * descriptors are released via a dup2() call which closes
+             * the socket and substitutes an open descriptor to /dev/null.
+             */
+
+            int [] fdsToClose = { -1, -1 };
+
+            FileDescriptor fd = mSocket.getFileDescriptor();
+
+            if (fd != null) {
+                fdsToClose[0] = fd.getInt$();
+            }
+
+            fd = ZygoteInit.getServerSocketFileDescriptor();
+
+            if (fd != null) {
+                fdsToClose[1] = fd.getInt$();
+            }
+
+            fd = null;
+
+            checkTime(startTime, "zygoteConnection.runOnce: preForkAndSpecialize");
+            pid = Zygote.forkAndSpecialize(parsedArgs.uid, parsedArgs.gid, parsedArgs.gids,
+                    parsedArgs.debugFlags, rlimits, parsedArgs.mountExternal, parsedArgs.seInfo,
+                    parsedArgs.niceName, fdsToClose, parsedArgs.instructionSet,
+                    parsedArgs.appDataDir);
+            checkTime(startTime, "zygoteConnection.runOnce: postForkAndSpecialize")
+        } catch (IOException ex) {
+            logAndPrintError(newStderr, "Exception creating pipe", ex);
+        } catch (ErrnoException ex) {
+            logAndPrintError(newStderr, "Exception creating pipe", ex);
+        } catch (IllegalArgumentException ex) {
+            logAndPrintError(newStderr, "Invalid zygote arguments", ex);
+        } catch (ZygoteSecurityException ex) {
+            logAndPrintError(newStderr,
+                    "Zygote security policy prevents request: ", ex);
+        }
+
+        try {
+            if (pid == 0) {
+                // in child
+                IoUtils.closeQuietly(serverPipeFd);
+                serverPipeFd = null;
+                handleChildProc(parsedArgs, descriptors, childPipeFd, newStderr);
+
+                // should never get here, the child is expected to either
+                // throw ZygoteInit.MethodAndArgsCaller or exec().
+                return true;
+            } else {
+                // in parent...pid of < 0 means failure
+                IoUtils.closeQuietly(childPipeFd);
+                childPipeFd = null;
+                return handleParentProc(pid, descriptors, serverPipeFd, parsedArgs);
+            }
+        } finally {
+            IoUtils.closeQuietly(childPipeFd);
+            IoUtils.closeQuietly(serverPipeFd);
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1765 @@
+
+来源于生活，高于生活，许多技术来源于生活
+深入理解计算机系统：高级语言--->中间语言---->程序解释执行，
+
+os作用：管理资源
+资源管理的对象：文件---打开，读写，关闭
+
+资源分配和调度的基本单元：进程----生命周期
+---执行实体：线程（线程的生命周期和线程间通信）
+
+进程是一次执行中程序的实例
+线程是轻量级的进程，是进程中的执行实体
+
+资源管理时需要交换数据：
+进程间的通信：
+传统：无名管道（pipe），有名管道（fifo），信号（signal）
+system v ipc对象：
+共享内存（share memory），消息队列（messeng queue）
+信号灯（semaphore）
+BSD--网络
+套接字（socket）--本地和网络间的通信
+socket（实质是一种特殊的文件和编程接口）：网络地址结构：协议+本地地址+本地端口
+
+
+
+linux中的思想:
+   一切皆文件(everything is file)
+
+bcd-lsp
+                                     例子
+b(block)    -- 块设备文件           硬盘 
+c(char)     -- 字符设备文件         鼠标，键盘
+d(directory)-- 目录文件             
+-(regular)  -- 常规文件(普通文件)
+l(link)     -- 软连接文件
+s(socket)   -- 套接字文件
+p(pipe)     -- 管道文件
+
+
+编程:
+1.复制粘贴
+2.增删改查
+3.打开 关闭
+4.创建文件名
+
+
+       操作对象           操作                函数                                       缓存 
+标准IO  流              1. 打开               fopen                                      带缓存的
+                        2. 读、写(文件定位)   fgetc、fputc fgets、fputs fread、fwrite
+                        3. 关闭               fseek ftell rewind
+                                              fclose
+
+--------------------------------------------------------------------------------------
+文件IO 文件描述符       1.打开                open                                       不带缓存的
+                        2.读、写(定位)        read 、write
+                        3.关闭                lseek
+                                              close
+---------------------------------------------------------------------------------
+
+
+缓存的设计原则：
+1.默认情况下一个普通的文件，是全缓存
+2.标准输入(stdin) 标准输出(stdout) 是行缓存
+3.标准错误(stderr) 是不缓存的
+4.当一个文件与终端发生关联时，则成为行缓存
+
+
+标准IO：内存--文件----流
+打开
+fopen（路径，方式）       perror(自定义字符串)    strerror(errno)
+
+对对象读写（有缓存）
+fread（内存，对象大小，对象个数，文件）    
+fread读取时若最后没有读取到一个完整的对象时，就不读取并结束。
+不能直接从文件读到文件或者从文件写到文件中去，需要先经过内存。
+   
+fwrite（内存，对象大小，对象个数，文件）
+
+对字符读写（有缓存）
+fgetc（路径）---每次读一个字符
+feof();ferror();
+fputc（字符，路径）----每次输出一个字符，返回字符（整型）
+
+fgets（内存，大小，文件）
+注：用fgets循环读取字符串的时候，读取一次内存就会刷新一次
+fputs（内存，文件）
+
+定位
+fseek(文件，偏移，初始位置);ftell（文件）;rewind(文件);
+
+关闭
+fclose（路径）
+
+
+
+文件IO:文件---内存------文件描述符
+打开
+open(路径，方式，权限)
+stdio                 file io
+r:                    O_RDONLY  
+r+：                  O_RDWR 
+
+w：                   O_WRONLY|O_CREAT|O_TRUNC,0666
+w+：                  O_RDWR|O_CREAT|O_TRUNC,0666
+
+a：                   O_WRONLY|O_APPEND|O_CREAT,0666
+a+：                  O_RDWR|O_APPEND|O_CREAT,0666
+
+读写
+read（文件，内存，大小）----返回值为文件的大小
+write（文件，内存，大小）
+
+定位
+lseek(文件，偏移，初始位置) ---该函数的返回值就是偏移量
+
+关闭
+close（文件）
+
+
+
+
+
+
+
+
+关于printf
+
+printf（格式，...）
+fprintf（文件，格式，...）
+sprintf（内存，格式，...）
+snprintf（内存，大小，格式，...）
+
+//默认 是往“标准输出(stdout)"进行输出
+int printf(const char *format, ...); //"..."表示可变参数列表
+    eg:
+       printf("%s\n","hello");
+       printf("%d,%s\n",1,"hello");
+//可以指定 往哪个文件进行输出
+int fprintf(FILE *stream, const char *format, ...);
+    eg:
+       fprintf(stdout,"%s\n","hello");
+       fprintf(stdout,"%d,%s\n",1,"hello");
+
+//往指定的一块内存空间进行输出
+int sprintf(char *str, const char *format, ...);
+    eg:
+    char buf[1024] = {0};
+
+    sprintf(buf,"%s\n","hello");
+    sprintf(buf,"%d,%s\n",1,"hello"); //可以将要输出的内容组织成一个字符串
+                                      //字符串拼接
+                                      //格式转换
+   //1.字符串拼接
+   char buf[1024] = {0};
+   sprintf(buf,"%s%s","hello","world");
+   //2.将数值数据 转换成 字符数据
+      sprintf(buf,"%d",123);
+
+//多了一个大小，可以指定输出多少个字符
+int snprintf(char *str, size_t size, const char *format, ...);
+eg:   
+   snprintf(buf,1,"%d",123);
+   
+   
+   
+
+
+
+目录属性与文件属性：
+#include <dirent.h>
+#include <sys/stat.h>
+
+//目录属性信息(主要有inode号，文件类型（d_type）,文件名)
+ struct dirent  
+      {
+        __ino_t d_ino;
+        __off_t d_off;
+        __ino64_t d_ino;
+        __off64_t d_off;
+        unsigned short int d_reclen;
+        unsigned char d_type;
+        char d_name[256];		/* We must not include limits.h! */
+      };
+      
+//文件属性信息(inode号，文件类型（st_mode）,硬链接数，用户和组id，时间)
+	   struct stat {         
+	       dev_t	 st_dev;     /* ID of device containing file */
+	       ino_t	 st_ino;     /* inode number */
+	       mode_t	 st_mode;    /* protection */
+	       nlink_t	 st_nlink;   /* number of hard links */
+	       uid_t	 st_uid;     /* user ID of owner */
+	       gid_t	 st_gid;     /* group ID of owner */
+	       dev_t	 st_rdev;    /* device ID (if special file) */
+	       off_t	 st_size;    /* total size, in bytes */
+	       blksize_t st_blksize; /* blocksize for file system I/O */
+	       blkcnt_t  st_blocks;  /* number of 512B blocks allocated */
+	       time_t	 st_atime;   /* time of last access */
+	       time_t	 st_mtime;   /* time of last modification */
+	       time_t	 st_ctime;   /* time of last status change */
+	   };
+	   
+st_mode的位域定义
+
+31.......16 15 | 14 13 12 11 | 10 9 | 8 7 6 | 5 4 3 | 2 1 0
+               |  file type  |s-bit | owner | group | other
+
+根据他的位域指示，与相应的数进行与操作，就能去除对应信息。
+一般与宏值相与，file type 是st_mode & 宏值 == 宏值，
+权限是 st_mode & 宏值 == 1
+rwx rwx r-x -------1表示有权限（rwx），0表示无权限（-）
+ 
+ 
+ 
+ 
+ 
+乱入的库： 
+ 
+多练习，多思考，多总结就不难了
+常用编译选项
+-E        预处理选型，预处理操作的时候使用
+-S        编译选项，把预处理过的代码编译成汇编代码
+-c        汇编选项，生成我们的目标文件
+-o        把编译的内容，指定保存到指定输出的文件。
+-g        生成gdb调试所需要的符号信息
+
+预处理----编译----汇编----链接
+预处理
+gcc -E hello.c -o hello.i
+编译
+gcc -s hello.i -o hello.s
+汇编
+gcc -c hello.s -o hello.o
+
+或
+gcc -c hello.c -o hello.o（直接使用汇编时，前两步也被执行了）
+链接
+gcc hello.c -o hello   (生成可执行文件)
+
+生成库并使用：
+1.静态库（需要复制多份给每一个调用者，一对一的关系）
+(1)生成：ar crs 库名.a 目标文件（.o）
+
+(2)使用：gcc 源文件名（.c） -L+库路径 库文件名 -I+头文件路径 -o 可执行文件名(随便起)
+
+2.动态库（便于共享，不用复制多份给每一个调用者）
+gcc -fPIC -c hello.c -o hello.o
+注：-fPIC带表产生与位置无关代码，共享库要求在被加载时，在内存的
+位置是不固定的
+
+(1)生成：gcc -shared 库名.a 目标文件（.so）
+
+(2)使用（2种方式）：
+a、在链接时使用
+gcc 源文件名（.c） -L+库路径 库文件名 -I+头文件路径 -o 可执行文件名(随便起)
+b、让加载器找到自己的共享库（3种）---具体见（库文件的制作.pdf）
+  1.使用环境变量LD_LIBRARY_PATH
+  2.在/etc/ld.so.cache文件中追加自己的动态库所在路径
+  3.将动态库拷入/lib或/user/lib
+  
+  
+  
+ 
+
+
+
+
+
+
+进程：创建---执行----结束----收尸
+
+进程间通信：共享内存效率最高:它是将内核空间中的一块共享空间映射到自己的用户空间
+问题：代码段是映射的吗
+
+linux内核中对进程的描述:
+
+task_struct{} //任务
+PCB           //(PCB(process control block)  进程控制块)---实际上就是一张记录了"进程信息的表”
+              //进程的地址空间，进程的关系(ppid)，进程的id号(pid), 打开的文件描述符
+              //
+进程的概念，主要是方便操作系统实现对多个程序的管理！
+
+--------------------------------------------------------------------------------------------
+进程的组成:
+
+进程本身:
+
+text|data|bss| 栈 堆|系统数据，寄存器的值(pc)|
+                               (program counter) //指向下一条要运行的指令
+                               
+linux下的可执行文件格式：ELF  
+程序被运行时，将会有os(操作系统) 来读取ELF头信息，加载对应的程序
+程序:
+text|data|bss|
+
++-------------------+             <--
+系统相关的数据(环境变               |
+    量，命令行参数)                 |
+                                    |
+---------------------               |
+   堆                               | 
+   栈                               |进程
+                                    |
+--------------------- <----         |
+bss(未初始化的数据段)     |         |
+---------------------     程        |
+    data(数据段)                    |
+---------------------     序        |
+    text(正文段)          |         |
++-------------------+ <---        <--
+
+linux下进程相关的命令:
+ps -ef | grep a.out   //查找 名字为 "a.out"的程序
+ps aux | grep a.out   //查找 名字为 "a.out"的程序，可以查看到 进程的状态信息
+
+pstree                //查看进程的关系
+pstree -p  [pid]           //查看进程的关系(带pid号)
+pstree -sp [pid]           //打印出父子关系
+
+top                  //类似Windows下的任务管理器
+top -p [pid]         //查看对应pid的进程的信息
+
+kill                //给进程发信号
+kill -9 [pid]       //给指定pid的进程发送 9号信号
+killall -9 [程序名] //给指定名称的进程发送 9号信号
+kill -l             //查看系统中的信号列表
+
+18 SIGCONT //发送恢复运行的信号
+19 SIGSTOP //发送中止信号，使程序暂停
+
+
+4.进程的一生(生命周期)
+
+D    uninterruptible sleep (usually IO) //不可中断的睡眠态
+R    running or runnable (on run queue) //正在运行，或是准备运行
+S    interruptible sleep (waiting for an event to complete)//可中断的睡眠态
+T    stopped, either by a job control signal or because it is being traced. //暂停态
+W    paging (not valid since the 2.6.xx kernel)
+X    dead (should never be seen)  // 死亡态
+Z    defunct ("zombie") process, terminated but not reaped by its parent. //僵尸态
+       
+       
+进程的生命周期：创建--->执行--->结束--->收尸
+(1)进程的创建：
+fork函数: 
+1. 完全拷贝,现在fork已经实现了"写时拷贝"的技术，代码段 共享，数据段，"写时拷贝" 
+2. fork 之后 父子进程的执行逻辑
+   都是从fork 的下一句开始执行
+3. fork之后 ，父子进程各自拥有自己的独立的pid号
+             父子进程各自拥有独立的4g虚拟地址空间
+4. 子进程会继承 父进程打开的文件描述符
+
+注意：父进程子进程操作文件：
+  fork之前打开文件, 父子进程共享文件表项，使用同一个offset值
+  解决: 1. fork之后打开文件, 这样，父子进程各自拥有自己的文件表项
+        2. 子进程 可以先关闭，再打开
+
+5.fork没有办法 保证子进程先运行，父子进程的运行顺序是随机的，有操作系统的调度策略决定
+
+vfork函数：设计出来是为了解决fork的完全拷贝带来的时(时间)空(空间)开销 ！
+子进程 共享 父进程的地址空间。
+1.保证子进程先运行,父进程只有在子进程结束之后才运行！
+2.共享了数据段的，这样的子进程对数据段的修改，会影响到父进程
+
+
+(2)进程的执行：
+1.子进程实现自己的逻辑
+getpid(),getppid(),getpgid()
+
+strtok函数：分割字符串
+char *strtok(字符串首地址, 分割标记组成的字符串);
+
+char buf[] = {"ls;-l,/"};
+ls -l /
+strtok(buf,";,");
+
+注意： 如果需要进行连续分割
+    第一次：必须传要分割字符串的地址
+    后面每次分割传NULL (NULL表示接着上一次分割的字符串，继续往后进行分割)
+    如果分割结束，则返回NULL
+
+
+
+2.exec函数族：有多个main函数时，非常方便
+exec 函数族：
+    int execl(const char *path, const char *arg, ...);
+    int execlp(const char *file, const char *arg, ...);
+    int execle(const char *path, const char *arg,..., char * const envp[]);
+
+    int execv(const char *path, char *const argv[]);
+    int execvp(const char *file, char *const argv[]);
+    int execvpe(const char *file, char *const argv[], char *const envp[]);
+execl（路径，命令，参数，NULL）
+execv（路径，地址（包括命令，参数，NULL））
+
+execlp（可执行文件的文件名，可执行文件的文件名，参数，NULL）
+execvp（可执行文件的文件名，地址（指向包括可执行文件的文件名，参数，NULL的指针数组））
+可执行文件的文件名的路径系统自动在PATH环境变量中去找
+
+execlp（可执行文件的文件名，可执行文件的文件名，参数，NULL）
+execvp（可执行文件的文件名，地址（指向包括可执行文件的文件名，参数，NULL的指针数组））
+可执行文件的文件名的路径系统自动在PATH环境变量中去找
+
+execle（可执行文件的文件名，可执行文件的文件名，参数，NULL，环境变量）
+execve（可执行文件的文件名，地址（指向包括可执行文件的文件名，参数，NULL的指针数组），环境变量）
+环境变量是指向指针数组的
+
+
+(3)进程的结束：
+exit(); 
+_exit();
+
+void _exit(int status); //系统调用，不进行IO缓存的处理
+void exit(int status);  //库函数，会进行io缓存处理(刷新)
+return  //return 是用来结束一个函数,从函数中返回，并不能结束一个进程
+退出状态....
+
+EXIT_FAILURE //退出失败的宏 1
+EXIT_SUCCESS //退出成功的宏 0
+其余的宏，查man手册
+
+
+
+
+(4)进程的收尸：
+wait();
+waipid();
+功能： 等待进程状态改变
+注：
+pid_t wait(状态值地址);-----执行此函数，可将子程序的退出状态值由传入的参数带出
+ 1.wait 只能检测 子进程结束的状态概念
+ 2.wait 实现的是 阻塞方式 ，会阻塞调用进程，如果想实现非阻塞方式wait不行
+ 3.wait 表示等待父进程的任意子进程结束，没有办法等待指定的进程结束
+
+waitpid 可以解决wait存在上述的问题：
+pid_t waitpid(等待子进程的类型,状态值地址, 等待的方式);
+pid_t waitpid(pid_t pid, int *status, int options);
+
+获得状态值的一些宏
+WIFEXITED(status) //判断进程是否正常结束
+WEXITSTATUS(status) //获得对应的退出状态值
+WIFSIGNALED(status) //判断是否是被信号结束掉
+WTERMSIG(status) //获得对应的信号值
+
+pid的取值：
+<-1   表示 等待 pgid(进程组id) 等于 |-100| 该绝对值对应的进程组中的任意子进程状态改变
+       eg:
+         pid = -100;
+         
+=-1   表示等待当前父进程的任意子进程状态改变 
+
+=0    表等待 pgid == 100 的这个进程组中的任意子进程状态改变
+       eg: 当前父进程的pid == 100 
+           
+>0    表示 等待pid 为200的这个子进程 状态发生改变
+       eg:
+       pid == 200
+         
+options（方式）的取值:
+       WNOHANG	    //指定该宏可以实现非阻塞方式调用
+       WUNTRACED    // T 可以检测到暂停态 ，就是一个进程被暂停
+       WCONTINUED (since Linux 2.6.10) // T-R 可以检测到 由 暂停态 到 运行态的变化
+    这三个宏值可以通过|(或运算)连接
+
+收尸操作：
+[1].不需要获取进程的退出状态值
+  wait(NULL); 
+[2].需要获得状态值
+
+   int status;
+   wait(&status); //带出状态值
+waitpid中的pid为用户自定义参数，不同于系统中的宏
+用的最多的是对僵尸态的处理
+WIFEXITED(status)等是系统（wait.h）定义的宏
+都为一个关于status的表达式
+exit返回的值与wait收到的值不同，怎么计算的?（返回值-收到值：0-0 1-256 2-512 3-768）
+
+
+---------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------
+
+线程的生命周期:
+创建 --- 执行 ----结束
+
+线程:
+线程是轻量级的进程，是进程中的执行实体！
+
+1.线程共享进程的地址空间
+  线程是在进程中创建的，进程一旦结束，线程则没有存在的意义!
+2.Linux内核中不区分进程和线程，都是用的task_struct 结构体来描述的
+3.进程和线程都是系统的创建的任务，参与系统的统一调度!
+
+线程： 侧重的是执行的概念，是一个执行单位，是执行体！
+
+*** 线程是系统调度的最小单位!
+----------------
+线程的组成：
+---------------
+
+共享的资源:
+
+代码段
+数据段
+系统的的数据(打开文件，信号)
+
+线程私有:
+1.tid(thread线程id号)
+2.pc (程序计数器)
+3.一组寄存器
+4.栈空间
+
+线程的特点：
+优点:
+1.切换速度快
+2.创建速度快 (不需要创建自己独立的地址空间和大量的资源)
+3.线程共享进程的地址空间，线程间通信方便
+缺点:
+4.但是线程的安全性,稳定性较差! 线程编程大量涉及 多线程之间的 处理(安全性等)
+---------------------------------------------------------------------------
+如何选择多进程还是多线程？
+[1].根据实际的功能需要 结合 线程和进程的特点来进行选择
+---------------------------------------------------------------------------
+
+
+
+(1)线程的创建
+借助于第三方库
+NPTL(new posix thread library)
+     或(native posix thread library)
+     
+int pthread_create(线程tid地址，线程的属性（可结合性与可分离性），
+                       线程的执行函数的入口地址，传入执行函数的参数的地址)   
+  
+可结合性（NULL）-->必须自己回收资源(pthread_join函数)
+可分离属性:资源有系统自动回收（pthread_detach函数）
+
+注意返回值：
+成功 返回0
+失败 返回错误码数值（并不会将系统错误码置位，需要手动置位）
+
+
+//处理返回错误码的宏函数
+#define handle_error_en(en, msg) \
+    do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+//do-while(0) 这里不是循环的作用，而是相当于 {} 的作用 防止编译出错，使书写更符合习惯
+//处理 设置错误的情况
+#define handle_error(msg) \
+    do { perror(msg); exit(EXIT_FAILURE); } while (0)
+    
+ 
+(2)线程的执行
+线程执行函数的原型
+void *(*start_routine) (void *)
+线程实现自己的逻辑
+
+(3)线程的结束
+pthread_cancel(); 
+exit();                        
+pthread_exit(一级地址)    
+pthread_join（线程tid，二级地址）
+一个线程传指向静态区的一级指针的地址，另一个用二级指针来接收（注意强转）  
+  
+  //手动回收线程的资源
+    for(i = 0; i < 2;i++)
+        pthread_join(tid[i],NULL);  
+
+  //设置线程分离
+    for(i = 0; i < 2;i++)
+        pthread_detach(tid[i]);
+  
+  
+   //手动回收线程的资源
+    /*pthread_join(tid[0],NULL);*/
+    /*pthread_join(tid[1],NULL);*/
+    for(i = 0; i < 2;i++)
+        pthread_join(tid[i],NULL);
+    //设置线程分离
+    for(i = 0; i < 2;i++)
+        //pthread_join(tid[i],NULL);
+        pthread_detach(tid[i]);
+        
+区别：手动回收可以接收线程返回的参数
+
+pthread_exit(一级地址)  pthread_join（二级地址）
+一个线程传指向静态区的一级指针的地址，另一个用二级指针来接收（注意强转）
+gcc sample.c -lpthread -D_REENTRANT -o sample
+
+
+
+线程的通信方式：
+1.信号量
+2.互斥锁
+3.条件变量
+
+
+
+
+
+1.初始化
+int sem_init(sem_t *sem,int pshare,unsigned int value)
+int sem_init(要初始化信号量的地址,信号量共享范围,要初始化的值)
+pshare
+0-线程间使用
+1-进程间使用
+
+2.p操作（apply）
+int sem_wait(sem_t *sem)
+返回值：成功返回0，失败-1&errno
+
+3.v操作（realse）
+int sem_post(sem_t *sem)
+返回值：成功返回0，失败-1&errno
+一般封装使用，见老师笔记
+
+程序有两类资源：读写资源
+
+sem_t sem_r;
+sem_t sem_w;
+
+读线程：
+{
+	申请读资源
+	执行
+	释放为写资源
+}
+
+
+pthread_mutex_init 初始化的宏值为联合体
+
+互斥锁三步骤：申请锁，加锁，解锁（加锁是为了独享资源）
+注意：为防止线程解锁后又去抢锁，需要加延时，使之成为睡眠态
+但睡眠多少又不可确定，于是加入了条件变量的机制
+
+mutex：互斥体
+attribute：属性
+
+
+条件变量：
+银行排号：有条件就执行，无条件就回去队列中去排队
+
+虚假唤醒(信号已经发出，但另一个线程并未被阻塞)
+解决方法：先让等待线程执行，即不给它加锁
+
+加了条件机制后，两个线程使用锁时，不用一直判断锁是否被释放，
+变成了，一个线程等待，另一个线程中的锁使用用完后就发信号给等待线程，
+然它使用。
+
+(1)信号量
+资源：全局buf
+信号量: 信号量是对一类资源的抽象
+        信号量代表的是这类资源，信号的值，代表是这类资源的个数！
+        
+读资源的信号量：--> 初始时，buf不满足读资源的条件，所以初始时，读资源的个数 为 0 
+写资源的信号量: --> 初始时有一个空的buf，满足写资源的条件--->buf初始时，是写资源，写资源的个数为1
+
+信号量的操作：
+1.初始化 ---->抽象数信号量，并且初始化值
+2.P操作(申请资源)
+3.V操作(释放资源)
+
+原始：
+1.初始化
+int sem_init(sem_t *sem,int pshare,unsigned int value)
+int sem_init(要初始化信号量的地址,信号量共享范围,要初始化的值)
+pshare
+0-线程间使用
+1-进程间使用
+
+2.p操作（apply）
+int sem_wait(sem_t *sem)
+返回值：成功返回0，失败-1&errno
+
+3.v操作（realse）
+int sem_post(sem_t *sem)
+返回值：成功返回0，失败-1&errno
+一般封装使用，见老师笔记
+
+封装：
+1.初始化-----init_sem(信号量的地址,要初始化的值)
+ int init_sem(sem_t *sem,unsigned int value)
+   {
+       if (sem_init(sem,0,value) < 0)
+       {
+           perror("sem_init fail");
+           exit(EXIT_FAILURE);
+       }
+ 
+2.p操作（apply）---P（信号量的地址） 
+int P(sem_t *sem)
+{
+    if(sem_wait(sem) < 0)
+    {
+        perror("sem_wait fail");
+        exit(EXIT_FAILURE);
+    }
+   return 0;
+} 
+ 
+3.v操作（realse）---V（信号量的地址） 
+int V(sem_t *sem)
+{
+    if(sem_post(sem) < 0)
+    {
+        perror("sem_post fail");
+        exit(EXIT_FAILURE);
+    }
+   return 0;
+}
+
+
+读写线程编程：
+读线程:                                     写线程:          
+{                                           {                
+  申请读资源                                    申请写资源   
+                                                             
+      读操作                                        写操作   
+                 
+  释放为写资源                                  释放为读资源 
+                                            }                
+}
+                                                                      
+
+
+
+
+
+
+                进程间通信的标示
+
+            进程间通过相同的key值 获得 相同的ipc对象，之后通过ipc对象进行通信
+                key值
+用户空间:        |
+-----------------|------------------------------------
+内核空间:        |
+                 |
+                 V
+              | ipc id|
+
+---------------------------------------------------------
+
+注意：设置两个不结束的函数，把他们当做两个进程，
+这样可以通过函数先后运行来控制进程的先后运行
+共享内存的步骤：
+1.获得key值（ftok）
+2.通过key值创建ipc对象共享内存（shmget函数，返回shmid）---在内核中
+3.映射共享内存到用户空间（shmat函数）
+4.操作共享内存（读写）
+5.解除共享内存映射（shmdt函数）
+6.删除共享内存（shmctl函数）
+
+
+
+信号灯集的步骤：达到同步效果（读写效果）
+若不使用同步，则读写的先后顺序需要竞争。
+1.创建key值（ftok函数）
+2.通过key值创建ipc对象信号灯集（semget函数，返回semid）---在内核中
+3.封装初始化信号灯（semctl函数）
+4.封装信号灯集操作（pv操作，semop函数）
+			|
+			|
+			v
+1.获得key值（ftok）
+2.通过key值创建ipc对象共享内存（shmget函数，返回shmid）---在内核中
+3.映射共享内存到用户空间（shmat函数）
+4.根据信号量的机制操作共享内存（封装后的初始化信号灯，pv操作，读写）
+5.解除共享内存映射（shmdt函数）
+6.删除信号灯集和共享内存（semctl函数和shmctl函数）
+
+
+消息队列的步骤:
+1.获得key值（ftok）
+2.msgget建立key值msgid之间的关系
+3.消息队列自己的操作
+  发送消息msgsnd函数
+  接受消息msgrcv函数
+4.删除消息队列（msgctl函数)
+注意：发送消息需要用户按系统要求格式自己构造结构体
+包括：消息类型和消息正文
+
+
+
+无名管道的步骤：
+1.创建无名管道：将两个文件描述符，一个作读端fd[0]（从管道读到buf中的一端）
+   （pipe函数）    一个作写端fd[1]（从内存写到管道中去的一端），读管道，写管道。
+   注意：创建子进程后关闭两端中的一端，防止读写混乱
+2.读写管道
+3关闭
+
+有名管道的步骤：
+1.创建有名管道：fifo--管道文件（mkfifo函数）
+2.打开
+3.读写
+4.关闭
+
+
+信号的步骤：异步通信
+1.发送信号：kill函数、raise函数
+2.设置信号：signal函数、sigaction函数
+3.定时信号：alarm函数、pause函数
+
+1.定义信号处理函数（自定义）
+2.注册自定义信号函数（signal函数）
+3.等待信号--处理
+4.注销自定义信号处理函数
+注：若没有注销自定义信号处理函数，函数一直有效，直到main函数结束
+
+
+
+
+
+
+
+
+
+
+
+
+
+网络--套接字的步骤（socket）:
+网络编程
+计算机网络基础知识:
+[1]. ip地址 
+    作用： 唯一表示网络中的一台主机
+    组成:
+        网络地址 + 主机地址
+
+    分类：   //ip地址实际上是一个32位的数值 
+             //表示方式方式:点分十进制
+             //             192.168.1.1
+          第一个字节
+     A:   [0,127]         //大型网络
+     B:   [128,191]       //中型网络
+     C:   [192,223]       //小型网络
+     D:   [224,239]
+     E:   保留
+注：把一个点分十进制形式的ip地址字符串，如"192.168.1.1" 转换成一个unsigned int 的数据(网络字节序)，
+函数inet_addr,inet_aton,inet_ntoa
+
+[2].子网掩码  
+    作用： 区分网络
+    
+  IP地址 : 192.168.  1.222
+  submask: 255.255.255.0 
+  IP&submask  ==>网络号
+
+  百度IP:
+           180.97.33.108
+  submask: 255.255.255.0
+           180.97.33.0----> 当前网络中的网络号 (192.168.1.0)  ------>数据发送到外网
+  192.168.1.0 ---> 网络地址 
+  192.168.1.255 --->广播地址
+
+[3].DNS (domain name service)
+    域名 <---映射--->ip地址
+    www.baidu.com 
+[4].网卡  ---->实现网络功能的硬件 
+[5].MAC地址---->标示 一个网络的硬件(48位) 
+
+
+
+   计算机网络通信过程
+
+      主机A                                                                 主机B
+
+        |                                                                     |
+        TCP                                                                   TCP
+        |                                                                     |
+        IP                                                                    IP
+        |                                                                     |
+        mac                                                                   mac
+        |                                                                     | 
+         \-------------------------------硬件-------------------------------/
+        
+
++------------------------------------------
+访问百度:
+
+www.baidu.com(域名)  ----DNS(域名解析服务器) -------> IP地址
+
+
+   局域网---->网关(门卫) ----发送给外网 ---->百度服务器所在的网络---->找到百度的服务器
+              局域网的消息 直接转发给该网络  
+
++------------------------------------------
+OSI （开放系统互联模型） iso ios
+
+
+应用层          //准备数据
+表示层          //定义数据格式 加密解密
+会话层          //建立会话连接
+传输层          //传输控制(无差错，可靠性)
+网络层          //实现网络的数据转发（数据包 路由选择） ---->数据包
+数据链路层      //将网络层的数据转换为 数据帧           ---->帧数据
+物理层          //将数据转换成对应的物理信号 (电信号 ，光信号) ---> bit 流(比特流) //一位一位数据形成的数据流
+
+物理层是第一层
+
+OSI模型是一种理想化的模型
+
+实际用到的是 Internet协议（TCP/IP协议）
+
+//四层模型
+应用层
+传输层
+网络层   （路由器）
+网络接口层与物理层  (数据链路层 是 和 具体的物理介质关系非常紧密)
+---------------------------
+//五层模型                           常见协议
+应用层                          TFTP (短文件传输协议)  HTTP (超文本传输协议)，SMTP（邮件）
+传输层                          TCP  UDP
+网络层                          IP ICMP IGMP
+网络接口层(数据链路层)          ARP　RARP 
+物理层                          IEEE802.1
+
+
+OSI模型的作用：
+ 网络模型------> 作为设计网络协议的参考
+
+                 ZigBee (短距离的无线传输协议) //网路协议的设计参考了osi模型来做的 
+
+----------------------------------------------------------------------------------
+访问百度:
+http://www.baidu.com  // http 
+
+
+
+                A主机                                                  百度主机
+                   数据       |                                           数据      ^
+              http|数据     封包                                     http|数据      |
+          TCP|http|数据       |                                  TCP|http|数据      |
+       IP|TCP|http|数据       |                               IP|TCP|http|数据      解包
+以太网|IP|TCP|http|数据       V                        以太网|IP|TCP|http|数据      |
+           |                                                      |
+           |                                                      |
+          ----------------------------------------------------------   
+                                  物理介质-->
+          ----------------------------------------------------------   
+
+
+
+网络通信本质上还是进程间的通信 ---(不同主机的进程间的通信)
+
+
+主机A  ------------- 主机B 要进程通信()
+
+QQ_A                          QQ_B
+
+
+思路:
+ 主机A ---->先找到主机B   ------->在主机B的进程中找到QQ_B  
+            (IP)                  (端口号)
+
+如何确定网络主机上的一个程序:
+
+IP + 端口号
+-----------------------------------------------------
+思考问题：
+
+主机A ----> intel CPU   (小端)
+主机B ----> AMD         (假设AMD是大端)
+
+注意:
+一旦涉及到多个不同的设备之间的通信，一定要考虑一个问题----字节序
+（主机中整型数据的字节序转换为网络字节序）
+函数：htons，htonl，ntohs，ntohl
+不同的CPU对字节的存放顺序会有不同
+
+大端模式
+数据0x12345678
+
+0x2000-->+------------+
+         |    0x12    |
+0x2001   +------------+
+              0x34
+0x2002        0x56
+0x2003        0x78
+
+
+小端模式
+0x2000-->+------------+
+         |    0x78    |
+0x2001   +------------+
+              0x56
+0x2002        0x34
+0x2003        0x12
+
+原则:
+  小端: 高高低低
+  --------------------
+规定:
+在网络中统一用大端模式，网络字节序统一的 (大端模式)
+
+
+主机A (小端) ("主机字节序"到"网络字节序"的转换)-------网络(大端) -----("网络的字节序"转"主机字节序")主机B(大端)
+
+---------------------------------------------------------------------
+协议：游戏的规则
+
+DHCP是局域网的自动分配ip地址的协议
+
+单工：广播
+半双工：对讲机
+全双工：手机
+
+
+4.osi理想模型
+应用层：准备数据
+
+表示层：定义数据格式，加密解密
+
+回话层：建立会话连接
+
+传输层：传输控制（无差错，可靠性）
+
+网络层：信息来自哪里，要到哪里去
+路径怎么选择，实现网络的数据转发（数据包 路由选择）
+---数据包
+
+数据链路层：将网络层的数据转换为数据帧（ARP：ip---mac）（RARP：mac--ip）
+---帧数据
+
+物理层：硬件接口，电信号还是光信号
+将数据转换成对应的物理信号（电信号，光信号）
+-----比特流
+
+通信协议：打包，解包
+
+操作系统为用户提供了一个应用接口，用户只需根据通讯协议即可通信
+---->学会使用系统提供的接口--->进程间的通信
+
+协议：
+TCP：面向连接---四无（无差错，无丢失，无失序，无重复）
+---全双工---字节流（流式传输）
+UDP：不面向连接---不可靠---全双工---分组数据
+
+
+编程流程：（cs模型）
+tcp：
+server端：                                                               client端：（不用绑定自己的地址，系统传输时会绑定）                                
+		1.创建socket                                                         		45：向监听套接字发送连接请求                                   
+		sockfd = socket(域，套接字类型，协议)                                		connect(要建立连接的socket，服务器地址结构体的地址，结构体大小)
+		                                                                     		服务器地址结构体的地址是自己填的                               
+		2.转换ip地址的格式和端口号的字节序（inet_aton函数等）                      		                                                               
+		htons(atoi(端口字符串))                                              		6.操作连接后的sokcet文件描述符                                 
+		inet_addr(ip地址)或inet_aton(地址结构体)，                           		send(要操作的fd，内存，操作的字节数，发送方式)                 
+		反向：ntohs(对端端口号)，inet_ntoa(对端地址结构体)                   		recv(要操作的fd，内存，操作的字节数，接收方式)                 
+		                                                                     		0为阻塞方式调用                                                
+		3.将已经转换好的地址信息绑定的到socket中--如110
+		bind（sockfd，地址信息结构体的地址，结构体长度（sizeof））
+		地址信息结构体：域（AF_INET）+port+ip
+		自定义：struct sockaddr_in
+		系统：struct sockaddr
+		用自定义结构体做参数传给函数时需要强转成系统的结构体
+		
+		4.将套接字设置成监听模式（被动模式），准备接受客户端请求
+		listen（sockfd，请求队列中的的最大请求数，默认为5）
+		   三次握手：
+		client-----server
+		1.我要和你通话
+		2.嗯，好的
+		3.嗯，知道了
+		等待队列--->三次握手---已连接队列
+		Dos（拒绝服务）攻击：非法占用请求队列，正常请求进不来
+		
+		5.设置等待并接收客户端请求，建立连接后（获得对端套接字的地址信息），
+		返回新的已连接的套接字描述符，原先的套接字还是监听状态
+		accept（监听套接字，保存对端地址的结构体的地址，结构体大小的地址）
+		addr的大小：值-结果参数：必须赋初值，函数调用完成后，通过函数返回一个结果值
+		
+		int connfd = 0;
+		struct sockaddr_in peer_addr;
+		socklen_t addrlen = sizeof（peer_addr）;
+		connfd = accpet(listenfd,(struct sockaddr*)&peer,&addrlen);
+		
+
+
+
+
+
+
+
+
+
+udp：
+server                                                                                            client          
+	1.socket                                                                                      		1.socket         	
+	2.bind                                                                                        		2.bind(可选)     	
+	3.recvfrom                                                                                    		3.sendto         	
+	recvfrom(套接字，内存的地址，内存大小，模式，保存对端地址的结构体的地址，结构体大小的地址)        4.recvfrom       	
+	接收的地址通过传变量让函数带出来（struct socket addr_in peeraddr）                                                 	
+	4.sendto                                                                                                           	
+	sendto(套接字，内存的地址，内存大小，模式，目标地址结构体的地址，结构体大小)                                             	
+	发送的地址自己填                                                                                                   	
+                                                                                                                     
+
+
+
+
+之前的模型只能一次处理一个客户端（循环服务器），因此，需要改进，
+那么问题来了，怎么解决？----并发服务器
+思路：采用多任务机制----多进程，多线程
+
+循环服务器:
+  同一时刻，只能处理一个客户端的请求
+并发服务器:
+  同一时刻，可以处理多个客户端的请求（缺点：占用系统资源，io阻塞）
+------------------------------------
+注意：
+1.要处理多个客户端的连接请求（tcp）------udp只需要接收
+2.要处理单个客户端的通信
+
+TCP：                                                              udp循环服务器模型:                                                                                                       
+  循环服务器模型                                                    1.socket                                                                                            
+                                                                    2.bind      //udp不用绑定的实质是，系统已经帮忙绑定了一遍                                           
+  1.socket                                                         while(1)                                                                                             
+  2.bind    //与ip地址绑定，就可以从该ip地址中获取套接字的数据     {                                                                                                    
+  3.listen                                                                 3.recvfrom //可以保存客户端的地址  与recv一样，只能等待接收，不能直接从指定地址接收数据      
+  while(1)//服务器可以一直接受客户端连接（单个）                           4.sendto   //发送给客户端                                                                    
+   {                                                               }                                                                                                    
+        accept                                                                                                                                                          
+            while(1)//负责处理单个客户端的通信过程
+            {
+                recv 
+                send
+            }
+   }
+  close
+
+------------------------------------------------
+并发服务器:                                                 tcp：多线程                                                        
+tcp：多进程                                                   1.socket                                                         
+  1.socket                                                    2.bind                                                           
+  2.bind                                                      3.listen                                                         
+  3.listen                                                    while(1)//服务器可以一直接受客户端连接(可以处理多个客户端)       
+  while(1)//服务器可以一直接受客户端连接                       {                                                               
+   {                                                               connfd= accept(); //来一个客户端，动态分配一个connfd        
+       connfd= accept();                                           pthread_create(tid,NULL,thread_handler,&connfd);            
+       //创建多任务来处理(进程或线程)--父进程                       //名字可以一样，因为tid不一样                                                          
+       pid = fork（）；
+       //负责处理单个客户端的通信过程 --子进程                 }                                                               
+       if(pid == 0)---子进程                               close                                                            
+       {                                                                                                                       
+           while(1)                                                                                                            
+           {                                                 //线程处理函数 ---> 处理与客户端的通信过程                        
+               recv();                                      void *thread_handler(void *arg)                                    
+               send();                                      {                                                                  
+           }                                                    int fd = *(int *)arg;                                          
+       }                                                           while(1)        
+       close（fd） //可以关闭父进程已连接的套接字                    {               
+       ，因为子进程已经得到了                                          read(fd,);                                                                                   
+   }                                                               }                                                           
+  close                                                        }                                                               
+                                                                                                         
+  父进程: 专门用来处理请求                                                                                 
+  子进程: 专门用来处理通信                                                                                 
+
+进程并发：
+             父--等连接  
+                  |
+             父--连接（连接后创建子进程）                                        
+      父-等            子（处）
+      	 | 	             |
+         |               |            
+     父-又连接         子（处）
+  父--等    子（处）   子（处）
+  
+线程并发：
+  主线程--连接
+  线1（处）---tid1
+  主线程--又连接
+  线2（处）---tid2
+
+问题：udp怎么区别发包的进程
+udp并发服务器模型:
+ 1.socket
+ 2.bind
+ while(1)//服务器可以一直接受客户端连接
+ {
+       recvfrom();
+			 pid = fork（）;
+       //创建多任务来处理(进程或线程)--父进程回去等待接收
+    
+       if(pid  == 0)
+       {
+       		sendto();
+           while(1)
+           {
+               recvfrom();
+               sendto();
+           }
+       }
+        close
+ }
+ close
+
+
+---------------------------------------------------------------
+注意;
+多线程的方式，注意"连接socket"的 fd传参
+
+多个客户端时，可能会修改到connfd值，造成影响
+
+解决:
+1.保存一下一下connfd值
+ a.在线程函数中 保存
+ b.动态内存申请，来一个客户端，创建一个connfd
+----------------------------------------------------------------
+
+1.非阻塞
+IO会阻塞，wait会阻塞，pthread_join会阻塞
+accept，recv，send也会阻塞
+设置非阻塞
+fcntl（文件描述符，命令操作，操作对应的参数）
+//读--修改--写
+int flag
+flag = fcntl(sockfd,F_GETFL,0) //读：获得文件描述符
+flag |= O_NONBLOCK;            //修改为非阻塞
+fcntl(sockfd,F_	SETFL,flag)    //将修改后的flag设置到文件描述符中
+注：单片机是非阻塞IO，是轮询的
+
+
+
+
+IO多路复用并发服务器
+内核里就是表，还有表的关系
+
+基本思想：先构造一张有关描述符的表，调用select函数进行监控，
+当这些文件描述符中的没有可用文件描述时，
+可选择阻塞或者是超时等待
+一个或多个已准备好的进行IO时，函数返回
+函数返回时，告诉进程哪个描述符已就绪，可以进行IO操作
+（思路：把之前阻塞状态的文件描述符，加入readfd表中）
+（分析：之前的函数一直在阻塞是由于文件描述符未就绪）
+
+监控多路文件描述符
+int select（最大文件描述符+1：文件描述符的个数，进行读操作的文件描述符的结合（表）的地址
+写集合，异常集合，设置超时等待的时间）
+--返回已就绪的文件描述符的个数（包含三个集合中）
+
+struct timeval
+{
+	long tv_sec;   //seconds
+	long tv_usec;  //microseconds
+}
+NULL--阻塞方式调用
+时间值：超时时间内，有就绪文件描述符，程序
+往下执行，若无，调用函数返回，返回错误码，类似try again
+struct timeval tm = {5,0};
+设置5秒超时时间
+
+
+1.准备表
+fd_set readfds
+//清空
+FD_ZERO(&readfds)
+
+2.添加要监控的文件描述符到表中
+STDIN_FILENO //标准输入
+FD_SET(STDIN_FILENO,&readfds);
+
+3.调用select函数进行监控
+
+
+
+
+注：
+1.将listenfd加入监控
+（实质是在处理多个客户端的连接请求）
+2.对于新连接的connectfd，需要更新maxfd的值，然后用i替代connectfd
+（实质是在处理单个客户端的通信）
+
+缺点：服务器使用单循环处理请求，并且依次处理客户端的请求，
+所以可能会导致有的客户会等待时间过长
+
+  while(1)
+    {
+        bakfds = readfds;
+        baktm = tm; //需要每次重新获得时间值
+        //ret = select(maxfd,&bakfds,NULL,NULL,NULL);
+        ret = select(maxfd,&bakfds,NULL,NULL,&baktm); //超时等待每次，超时之后时间值，会被清零
+        if(ret < 0)
+        {
+            perror("select fail");
+            exit(EXIT_FAILURE);
+        }
+
+        if(ret == 0)
+        {
+            printf("time out\n");
+        }
+        
+        for(i = 0; i < maxfd; i++)
+        {
+            if(FD_ISSET(i,&bakfds)) //如果在，则返回真 ，否则 为假
+            {
+               switch(i)
+               {
+               case STDIN_FILENO:
+                     fgets(buf,sizeof(buf),stdin);
+                     printf(">%s\n",buf);
+                     break;
+               case  3: //处理客户端的请求
+                     connfd = accept(listenfd,(struct sockaddr *)&peer_addr,&addrlen);
+                     if (connfd < 0)
+                     {
+                         perror("accept fail");
+                         exit(EXIT_FAILURE);
+                     }
+                     printf("----------------------------\n");
+                     printf("ip = %s\n",inet_ntoa(peer_addr.sin_addr));
+                     printf("port = %d\n",ntohs(peer_addr.sin_port));
+                     printf("----------------------------\n");
+                     //添加connfd 到 readfds 来实现监控
+                     FD_SET(connfd,&readfds);
+
+                     //更新maxfd
+                     if(connfd + 1> maxfd)
+                         maxfd = connfd+1;
+                     break;
+               default:
+                     ret = read(i,buf,sizeof(buf));
+                     printf("c>: %s\n",buf);
+                     break;
+               }
+            }
+        }
+
+    }
+    return 0;
+
+
+超时检测：（通过协议实现）
+思路：
+超时时间内，有就绪文件描述符，程序
+往下执行，若无，调用函数返回，返回错误码，类似try again
+//1.select 设置超时时间
+//2.设置socket的属性 --- 超时属性
+//3.alarm 函数定时，处理SIGALRM信号，sigaction处理
+（重点在对超时后的处理）
+
+注意：超时检测检测到客户端不存在时，可以关闭服务器中对应的
+子进程或线程，关闭对应的文件描述符
+
+属性：
+setsockopt（套接字，选项所属协议层，socket的属性
+属性选项名称，选项值的地址，选项值大小）
+
+SOL_SOCKET层次：
+SO_RCVTIMEO(超时选项)
+值：struct timeval tm = {3,0};
+
+SO_REUSEADDR(端口复用)---功能选项只需要开关值，不需要其他参数值
+值：int on = 1；非0值---表示开启该功能
+注意：先开启功能，然后再绑定地址
+
+tcp keepalive---属性设置（KEEPALIVE主要用来探测客户端的异常情况）
+1.开启keepalive探测
+2.设置交互探测
+3.设置发包时间间隔
+4.设置发送次数
+
+alarm信号与处理函数：
+struct sigaction act；
+sigaction（宏信号，获得原有的信号处理函数的信息，
+修改之后的处理函数的信息）
+
+使用：读--修改--写
+读：
+sigaction(SIG,NULL,&act);
+修改：
+act.sa_handler sighandler;  --> void sighandler(int signo)
+act.sa_flags &= ~SA_RESTART;
+设置新的信号处理函数
+sigaction(SIG,&act,NULL);
+
+数据传输一般用消息结构体
+
+心跳包：对客户端的异常的探测（一般用于udp，用户在应用层实现）
+机制：在原有的正常数据发送下，多开进程或线程发送心跳包，
+告知服务器，客户端还存在。
+
+
+
+tcp可靠传输：1.三次握手---通路
+						 2.四个无--保证数据可靠（关键）
+						 （由tcp协议完成）
+udp如何保证可靠传输
+用户层模拟四无机制：无差错，无丢失，无失序，无重复
+保数据收发的同步和正确（校验）
+
+
+
+单播，多播，广播
+
+广播
+发送方：---电台
+1.创建socket
+2.设置广播属性---设置开关值（int on = 1;）
+3.填充一个广播地址 struct sockaddr_in
+4.往广播地址中发送信息 sendto
+
+接收方：---收音机
+1.创建socket
+2.绑定广播地址（bind） struct sockaddr_in--类似调频
+3.从广播地址中接收消息 recv
+
+
+
+组播：
+发送方：
+1.创建socket
+2.填充一个多播地址 struct sockaddr_in
+3.往多播地址中发送信息 sendto
+
+接收方：
+1.创建socket
+2.加入多播组（加入后才能从多播组地址接收套接字）
+填充struct ip_mreq+设置socket属性
+3.填充一个多播地址 struct sockaddr_in
+4.绑定多播地址
+5.从多播地址中接收消息 recv
+
+
+unix domain（域套接字）：主要用于本地进程间通信
+分为：流式套接字和报文套接字
+
+相同：编程流程与网络相同
+区别：域不同
+网络：AF_INET   本地：AF_UNIX(AF_LOCAL)
+网络 --> AF_INET
+本地 --> AF_UNIX (AF_LOCAL)
+2.地址信息的填充
+
+网络:
+struct sockaddr_in  seraddr;
+bzero(&seraddr,sizeof(seraddr));
+seraddr.sin_family = AF_INET;
+seraddr.sin_port   = htons(8888);
+seraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+本地:
+struct sockaddr_un seraddr;
+bzero(&seraddr,sizeof(seraddr));
+seraddr.sun_family = AF_UNIX;
+strcpy(seraddr.sun_path,"hello"); //指定地址信息
+
+注：绑定完后才会生成socket
+报文套接字客户端的套接字需绑定地址
+
+
+
+建立协议！！！
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+存在的问题：
+1.消息队列的大小--ipcs -l
+2.信号灯集的操作，实际中如何用，用的多吗，如何实现批量操作
+3.父进程获得的锁，子进程中会不会继承？不会，因为子进程有自己的执行行为，不会获得父进程的锁！
+4.IPC删除处理，如何进行删除，多次删除如何处理？
+
+
+定义--作用--应用场景
+函数指针就是指向函数的指针。
+
+作用：实现模块框架，达到功能定制的效果。
+
+linux中对某些信号的处理并不是系统来决定，而是又程序员决定，
+程序员只需写好信号处理函数，然后将函数入口地址赋给一个函数
+指针，将这个函数指针作为一个参数传给信号注册函数，将其注册给系统
+就可以实现对某个信号特定的处理，保证了对信号处理的灵活性
+
+
+回调函数就是一个通过函数指针调用的函数。
+
+作用：将函数的调用者和实现者分开，调用者不需要知道谁实现者，
+他只需要知道存在一个具有特定原型和限制条件的被调用函数
+提供调用的灵活性。
+
+
+
+
+直调：	
+函数a调用函数b
+
+回调：
+---回调就成了一个高层调用底层，底层再回过头来调用高层的过程
+系统编程（system programming）和应用编程（application programming）。
+所谓系统编程，简单来说，就是编写库；
+而应用编程就是利用写好的各种库来编写具某种功用的程序，也就是应用。
+系统程序员会给自己写的库留下一些接口，即API
+以供应用程序员使用。所以在抽象层的图示里，库位于应用的底下。
+当程序跑起来时，一般情况下，应用程序（application program）
+会时常通过API调用库里所预先备好的函数。但是有些库函数（library function）
+却要求应用先传给它一个函数，好在合适的时候调用，以完成目标任务。
+这个被传入的、后又被调用的函数就称为回调函数（callback function）
+
+
+
+数据库：
+1.进入数据库
+  adb shell
+  cd mnt/sdcard        //转到sdcard目录下访问或者创建数据库文件
+  sqlite3 example1.db  //如果有这个数据库文件，那么打开该数据库文件。如果没有，则创建。
+  ctrl+d               //退出 sqlite 提示符
+  .tables              //列出该数据库下所有表格名字
+  .schema              //列出数据库中所有表格的字段名
+  .header on           //显示字段名。在查询时，默认是不显示字段名，只显示记录。此属性可设置显示字段名。
+  （注意以上命令都不要分号“;”）
+
+2.创建表格
+  create table studentinfo(
+  	id integer primary key autoincrement
+  	name char(20) not null,
+  	phone char(20),
+  	class char(20));
+create table studentinfo(id integer primary key autoincrement,name char(20) not null,phone char(20),
+class char(20));
+  在TABLE中最后一行有个PRIMARY KEY(ID)，意思是定义ID为主键，主键基本上是唯一值
+  可以使用下面方式定义主键
+  id integer primary key autoincrement;
+
+
+3.修改表格
+  alter table studentinfo rename to ssinfo; //修改表格名字
+  alter table studentinfo add age integer   //向表格添加新的字段age
+  一般我们是不能修改字段值的，如果非要改，请按以下步骤
+  新建一张表teacherinfo，具有id和class字段，将studentinfo表中的相应两个字段下的值复制过来
+  insert into teacherinfo select id, class from studentinfo;
+
+4.删除表格
+  drop table teacherinfo
+
+5.插入记录
+  insert into studentinfo ('name', 'phone', 'class') values ('cjl', '13986242798', 'class_01');
+
+6.更新记录
+  update studentinfo set phone = '12345876' where id = 1;
+
+7.查询记录
+  select * from studentinfo where class = 'class_01';
+  select * from studentinfo where age > 12 and age < 18;
+  select * from  person   limit  2;              //显示表格中前两项信息  
+
+8.删除记录
+  delete from studentinfo where class = 'class_02';
+  
+  
+  一 sqlite函数接口 
+
+1.SQLITE_API 
+int sqlite3_open(
+    const char *filename,   /* Database filename (UTF-8) */
+    sqlite3 **ppDb          /* OUT: SQLite db handle */
+    );
+
+功能:打开一个数据库文件 
+参数:
+    filename  数据库文件名 
+    ppDb      获得数据信息在内存的首地址 
+返回值:
+成功返回SQLITE_OK,失败返回错误码 
+
+2.SQLITE_API 
+const char *sqlite3_errmsg(sqlite3 *pdb);
+功能:获取数据库操作失败信息 
+参数:
+    pdb 通过sqlite3_open 获得句柄 
+返回值 
+返回错误信息的首地址 
+
+
+3.SQLITE_API 
+int sqlite3_close(sqlite3 *pdb)
+功能:关闭数据库 
+参数:
+    pdb 通过sqlite3_open 获得句柄 
+
+
+4.SQLITE_API 回调方式执行sql
+int sqlite3_exec(
+    sqlite3* db ,                                  /* An open database */
+    const char *sql,                           /* SQL to be evaluated */
+    int (*callback)(void*,int,char**,char**),  /* Callback function */
+    void * arg,                                    /* 1st argument to callback */
+    char **errmsg                              /* Error msg written here */
+    );
+
+功能:执行一条sql语句 
+参数:
+    db          打开的数据库 
+    sql         sql语句 
+    callback    回调函数，做查询操作的时候，回调函数会被调用，可通过回调函数打印查询到信息 
+    arg         给回调函数传递的参数 
+    errmsg      获得错误信息 
+
+返回值：
+成功返回0，失败返回错误码 
+
+
+int (*callback)(void *arg,int n,char** pvalue,char **pname),  /* Callback function */ 
+参数:
+    arg         通过sqlite3_exec的函数接口传递的参数 
+    n           查询到记录的字段个数，即列数 
+    pvalue      存放字段值的指针数组首地址 
+    pname       存放字段名的指针数组首地址 
+
+练习:
+
+1.输入sql语句执行 
+2.输入用户名查询
+
+int select_name(sqlite3 *db)
+{
+    char sql[1024];
+    char name[15];
+
+    printf("Input name:");
+    scanf("%s",name);
+
+    //sql:select * from people where NAME='A' 
+    sprintf(sql,"select * from people where NAME='%s';",name);
+
+    exec_sql(db,sql);
+
+    return 0;
+}
+
+int cmd;
+char sql[N];
+while(1)
+{
+    scanf("%d",&cmd);
+
+    switch(cmd)
+    {
+    case 1:
+        printf("Input sql:");
+        fgets();
+
+        exec_sql(db,sql);
+        break;
+
+    case 2:
+        select_name(db);
+        break;
+    }
+}
+
+
+5.SQLITE_API 非回调方式执行sql
+int sqlite3_get_table(
+    sqlite3 *db,          /* An open database */
+    const char *zSql,     /* SQL to be evaluated */
+    char ***pazResult,    /* Results of the query */
+    int *pnRow,           /* Number of result rows written here */
+    int *pnColumn,        /* Number of result columns written here */
+    char **pzErrmsg       /* Error msg written here */
+    );
+void sqlite3_free_table(char **result);
+功能:执行一条sql语句 
+参数
+    db：            数据库句柄
+    sql：           SQL语句
+    resultp：       用来指向sql执行结果的指针
+    nrow：          满足条件的记录的数目
+    ncolumn：       每条记录包含的字段数目
+    errmsg：        错误信息指针的地址
+返回值：成功返回SQLITE_OK，失败返回错误码
+
+例：
+sqlite3 *db;
+char  *errmsg，**resultp;
+int  nrow,  ncolumn, i, j, index;
+
+if  (sqlite3_get_table(db, “select  *  from  table;”,  &resultp,  &nrow, &ncolumn,  &errmsg) !=  SQLITE_OK)
+{
+    printf(“error :  %s\n”,  errmsg);
+    exit(-1);
+}
+
+index = ncolumn;    // 第一条记录的第一个字段的下标
+										//从第二条记录开始
+
+for  (i=0;  i<nrow;  i++)
+{
+     for  (j=0;  j<ncolumn;  j++)
+     {
+         printf(“%s  :  %s\n”,  resultp[j], resultp[index++]);    
+     }
+}
+
+As an example of the result table format, suppose a query result is as follows:
+内存布局是：第一行是字段名称，后面是紧接着是每个字段的值
+
+Name        | Age
+-----------------------
+Alice       | 43
+Bob         | 28
+Cindy       | 21
+
+
+ There are two column (M==2) and three rows (N==3). Thus the result table has 8 entries. Suppose the result table is stored in an array names azResult. Then azResult holds this content:
+
+
+ azResult[0] = "Name";
+ azResult[1] = "Age";
+
+ azResult[2] = "Alice";
+ azResult[3] = "43";
+ azResult[4] = "Bob";
+ azResult[5] = "28";
+ azResult[6] = "Cindy";
+ azResult[7] = "21";
+
+
+使用规律:
+1.做非查询操作，则使用sqlite3_exec ,此时不需要回调函数 
+2.做查询操作的时候，则使用sqlite3_get_table,有参数可知道有没有查询到结果
+
+
+
+
+中间件是位于平台（硬件和操作系统）和应用之间的通用服务，
+这些服务具有标准的程序接口和协议。
+针对不同的操作系统和硬件平台，它们可以有符合接口和协议规范的多种实现

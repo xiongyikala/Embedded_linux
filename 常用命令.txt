@@ -1,0 +1,282 @@
+一、ubuntu设置中文输入法
+ibus-setup
+
+以下命令均在vi命令模式有效
+
+h 光标左移一个字符
+l 光标右移一个字符
+j 光标下移一行
+k 光标上移一行
+
+一.对整行操作（命令模式下）
+1.复制光标所在行 yy
+	粘贴光标所在行 p（注：是在当前行的下一行粘贴）
+	
+2.删除光标所在行 dd
+
+3.选中光标所在行 shift + v
+结合j k选取多行
+
+4.复制选中内容 y
+
+5.粘贴选中内容 p（向光标所在行的下一行粘贴）
+shift + p（向光标所在行的上一行粘贴）
+
+数字 + p 指定粘贴次数
+
+6.剪切选中内容 x （del键）
+可当退格键使用，删除光标处字符
+
+7.撤销上次操作 u
+
+作业：1、大家自己来写一个hello.c
+		  2、利用组合键来复制和粘贴5行  printf（"hello world!\n"）;这一项
+		  3、第二个printf要求输出hello
+		  4、第三个printf要求输出world！
+
+二.对单词操作
+8.选取几个字符 v 结合h l选择
+
+9.粘贴选中内容 p（注意此时我们是在光标的当前行粘贴）
+
+10.替换单个字符 r+要替换字符
+
+11.替换多个字符 R+要替换字符 Esc结束替换
+
+12.查找字符串
+
+/向下查找字符串
+?向上查找字符串
+*查找当前光标处单词
+
+n下一个匹配的字符串
+N上一个匹配的字符串
+
+取消高亮 :nohls
+
+13.替换字符串
+
+:m,n s/oldstring/newstring/g
+:.,$ s/oldstring/newstring/g
+:%s/oldstring/newstring/g
+
+m,n 指定替换从m行到n行
+
+. 表示光标当前行
+$ 表示文件最后
+g 替换所有找到字符串,若无g则只替换每行找到的第一个字符串
+% 表示所有的行
+
+
+作业：1、大家自己写一个“my name is XX”,然后输出
+      2、利用替换字符串符号来把XX替换成自己的名字。
+
+14.定位到某行
+<1>打开文件后定位到某行
+:行号
+
+<2>在打开文件的时候定位到某一行
+vi  文件名  +行号
+例如: vi hello.c +3
+
+
+terminal 快捷键
+15.另开一个终端(默认进入了当前目录) ctrl + shift + n   
+16.当前终端再开一个终端（默认进入用户目录/home/用户名） ctrl + shift + t    
+
+命令：ln -s 源文件 软链接文件
+命令：ln  源文件名  硬链接文件名
+ sudo apt-get upgrade
+
+安装tftp
+sudo apt-get install tftp-hpa tftpd-hpa
+mkdir /home/ubuntu/tftpboot
+chmod 777 /home/ubuntu/tftpboot
+如果想修改tftp服务的根目录，运行如下命令：
+sudo vim /etc/default/tftpd-hpa
+会出现如下界面：
+TFTP_USERNAME="tftp"
+TFTP_DIRECTORY="/tftpboot"
+TFTP_ADDRESS="0.0.0.0:69"
+TFTP_OPTIONS="-c  -s  -l"
+修改TFTP_DIRECTORY="/home/ubuntu/tftpboot"这一行中引号中的路径，然后杀掉tftpd服务进程，命令如下：
+sudo service tftpd-hpa restart
+
+
+安装nfs
+sudo apt-get install nfs-kernel-server nfs-common
+sudo mkdir /etc/exports.d
+
+如果/source/rootfs目录不存在，运行如下命令创建：
+mkdir -p /source/rootfs
+chmod 777 /source/rootfs
+
+打开/etc/exports文件，修改如下行：
+/source/rootfs  * (rw,sync,no_root_squash, no_subtree_check)
+“/source/rootfs”是存放nfs文件系统的路径；“*”表示在所有的网段都可以共享；“rw”表示nfs文件系统允许读写；“sync”表示修改都会同步到nfs服务端，否则只是会暂存在本地内存；
+
+sudo exportfs -av
+注意：这步一定要成功，否则下面mount会失败
+
+sudo /etc/init.d/nfs-kernel-server restart
+
+
+
+sudo mkdir /mnt
+2.挂载到nfs服务器
+sudo mount -t nfs 127.0.0.1:/source/rootfs  /mnt
+3.确认挂载成功
+ubuntu@ubuntu:~/work/rootfs$ df
+Filesystem           1K-blocks      Used Available Use% Mounted on
+/dev/sda1             19609276   7010752  11602428  38% /
+udev                    506028         4    506024   1% /dev
+tmpfs                   205216      1396    203820   1% /run
+none                      5120         0      5120   0% /run/lock
+none                    513040       180    512860   1% /run/shm
+/dev/sdb1       61926396   3774704  55006016   7% /home/ubuntu/work
+127.0.0.1: /source/rootfs
+                      61926400   3774592  55006080   7% /mnt
+
+
+
+
+
+
+
+
+
+
+
+安装samba
+sudo apt-get install samba
+配置共享目录
+打开本目录下的smb.conf，配置最后5行如下：
+[linux]
+path=/home/linux
+valid users=linux
+public=yes
+writable=yes
+linux是当前共享目录的用户，这里是将linux的用户目录共享给主机。配置完成后拷贝到/etc/samba/目录下覆盖默认目录。
+4.重启samba服务
+$ sudo service smbd restart
+5.创建samba用户
+$ sudo smbpasswd -a linux
+
+
+sudo apt-get install ncurses-dev
+
+
+
+
+交叉工具链
+
+mkdir toolchain
+cd  toolchain	
+将第一天/工具/gcc-4.6.4.tar.xz拷贝到toolchain目录下并解压
+tar  xvf  gcc-4.6.4.tar.xz
+
+环境变量的添加
+修改文件/etc/bash.bashrc添加如下内容
+export  PATH=$PATH:/home/linux/toolchain/gcc-4.6.4/bin
+重启配置文件
+$ source  /etc/bash.bashrc
+
+
+
+二、文档打包压缩命令详解(结合PPT64讲解) gzip bzip2
+<1>zip压缩
+（1）压缩文件
+ zip test.zip test1.c test2.c
+ (2)解压文件
+ unzip test.zip
+
+<2>gzip压缩(注：只能对普通文件压缩，不能对目录文件压缩)
+(1)压缩文件
+gzip test.c
+(2)解压文件
+gunzip test.c.gz
+ 	
+<3>bzip2压缩（注：bzip2对一个文件进行高比例压缩，不能对目录文件压缩）
+(1)压缩文件
+bzip2 test.c
+(2)解压文件
+bunzip2  test.c.bzip2
+
+
+sudo dpkg -i *.deb
+sudo apt-get install ncurses-dev
+
+
+
+<5>cp 拷贝源文件或者目录到指定路径
+常用：
+
+a.将普通文件拷贝到指定的路径	  
+sudo cp /mnt/hgfs/share/test.c  /home/chw
+
+b.将目录拷贝到指定的路径
+sudo cp /mnt/hgfs/share/dir  /home/chw  -a
+
+c.实现备份的功能，将源文件备份一次
+sudo cp test.c  test_bak.c
+	 
+d.实现备份的功能，将目录备份一次 
+sudo cp dir  dir_bak  -a
+
+
+
+<7>mv  移动源文件或者目录到指定的位置	 
+常用：
+
+a.将普通文件移动到指定位置
+  mv /home/chw/test.c /mnt/hgfs/share
+  
+b.将文件实现重命名的功能
+ mv  test.c  hello.c
+ 
+c.将目录实现重命名的功能
+ mv  dir   dir_list
+ 
+ 
+sudo  apt-get update 
+sudo  apt-get  install  curses5-dev 
+sudo  apt-get  install  libncurses5-dev
+sudo  apt-get -f install 添加依赖
+http://cn.archive.ubuntu.com/ubuntu/pool/main/n/ncurses/libtinfo-dev_5.9-4_i386.deb
+
+安装搜狗输入法
+ 
+ 安装ficx框架
+ 安装sogoupinyin
+ --sudo dpkg -i sogoupinyin_2.0.0.0072_i386.deb 
+ 安装依赖
+ --sudo  apt-get -f install
+ 
+setenv bootargs console=ttySAC2,115200 init=/linuxrc
+setenv bootcmd movi read kernel 0x41000000\;movi read dtbs 0x42000000\;movi read rootfs 0x43000000 0x300000\;bootm 0x41000000 0x43000000 0x42000000
+saveenv
+setenv bootargs root=/dev/nfs rw nfsroot=192.168.1.88:/home/ubuntu/source/rootfs ip=192.168.1.66 console=ttySAC2,115200 init=/linuxrc
+saveenv
+setenv bootcmd movi read kernel 41000000 \;movi read dtbs 42000000\;bootm 41000000 - 42000000
+setenv bootcmd tftp 41000000 uImage\;tftp 42000000 exynos4412-fs4412.dtb\;bootm 41000000 - 42000000 ("-"表示不指定根文件系统地址)
+saveenv
+
+
+
+insert插入下级主题，enter同级主题，f4加入备注
+光速搜索
+
+
+全局对齐快捷键：gg=shift+g
+
+
+:%s/sss/ddd/g
+:12,15s/sss/ddd/g
+
+
+gcc sample.c -lpthread -D_REENTRANT -o sample
+
+
+alt  + / 自动补全
+Ctrl + d 删除
+ctrl + / 注释

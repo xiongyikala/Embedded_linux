@@ -1,0 +1,115 @@
+	struct device                                                               struct device_driver                                                                                                             struct bus_type                                                                                                          
+		它主要用于描述一个总线设备                                                	总线设备对应的驱动描述。                                                                                                       相关总线的描述                                                                                      
+		                                                                          	                                                                                                                                                                                                                                   
+			struct device {                                                         	struct device_driver {                                                                                                         struct bus_type{                                                                                    
+				const char		*init_name; /* initial name of the device */            		const char		*name;                                                                                                         		int (*match)(struct device *dev, struct device_driver *drv);//总线匹配device和device_driver的方法
+//device所属的总线类型，可见device和 bus_type 和 device_driver 息息相关       		struct bus_type		*bus;  //所属的那个总线                                                                                    		int (*uevent)(struct device *dev, struct kobj_uevent_env *env);                                  
+				struct bus_type	*bus;	                                                			const struct of_device_id	*of_match_table;                                                                                                                                 		int (*probe)(struct device *dev);                                                                
+				struct device_driver *driver;	//设备对应的驱动                        	  	const struct acpi_device_id	*acpi_match_table;                                                                                                                             		int (*remove)(struct device *dev);                                                               
+				dev_t			devt;		/* dev_t, creates the sysfs "dev" */                		int (*probe) (struct device *dev);  //匹配成功之后调用                                                                       		void (*shutdown)(struct device *dev);                                                            
+		};                                                                        		int (*remove) (struct device *dev);                                                                                              	const char		*name;                                                                                                    
+		                                                                          		void (*shutdown) (struct device *dev);                                                                                           	const char		*dev_name;                                                                                                
+		                                                                          		int (*suspend) (struct device *dev, pm_message_t state);                                                                          const struct dev_pm_ops *pm;                                                                                                    
+		                                                                          		int (*resume) (struct device *dev);                                                                                               const struct attribute_group **bus_groups;                                                                                               
+		                                                                          	  };                                                                                                                                                                                                                               
+		                                                                          	                                                                                                                                                                                                                                   
+		                                                                                                                                                                                                                                                                                                               
+struct  platform_device:                                        	                struct platform_driver:                                                                                                    	platform_bus_type                                                                                               
+			struct platform_device {                                  	                 通过platform_device,由device继承而来一个platform_device,那么我们可以试想一下肯定也是由device_driver延伸来一个             		struct bus_type platform_bus_type = {                                                              
+				const char	*name;   //设备名                            	                	platform_driver。platform_driver里面肯定有一个device_driver结构体成员。                                                  			.name		= "platform",                                                                            
+				int		id;   //设备id                                     	                	struct platform_driver {                                                                                                 			.dev_groups	= platform_dev_groups,                                                               
+				bool		id_auto;                                        	                		int (*probe)(struct platform_device *);                                                                                			.match		= platform_match,  //指定了platform类总线match函数为platform_match                     
+				struct device	dev;   //继承父类 device                  	                		int (*remove)(struct platform_device *);                                                                               			.uevent		= platform_uevent,                                                                     
+				u32		num_resources;                                    	                		void (*shutdown)(struct platform_device *);                                                                            			.pm		= &platform_dev_pm_ops,                                                                    
+				struct resource	*resource; //资源                       	                		int (*suspend)(struct platform_device *, pm_message_t state);                                              		              };                                                                     
+                                                                	                		int (*resume)(struct platform_device *);                                                                   				           匹配规则：                                                                                                                                                        
+				const struct platform_device_id	*id_entry;              	                		struct device_driver driver;                                                                                                 			OF 方式的匹配(设备树)  ----> ACPI 方式  ---> id table ----> driver name 和device name。
+                                                                	                		const struct platform_device_id *id_table;                                                                                   			                                                                                       
+				/* MFD cell pointer */                                  	                		bool prevent_deferred_probe;                                                                               
+				struct mfd_cell *mfd_cell;                              	                	};                                                                                                           
+                                                                	                	我们可以看到它里面的确有一个 device_driver结构体成员。又是继承。                                             
+				/* arch specific additions */                           	                	probe就是驱动里面需要实现的在match之后会调用到的。传给driver一个对应的platform_device.                       
+				struct pdev_archdata	archdata;                         		                                                                                                                         
+			};                                                        		那么driver中通过这个参数是不是就可以得到与之对应device的资源信息。                                                       
+                                                                		其实linux内核专门提供了一个函数给我们使用，用来获取device那边的resource。                                                
+		resource成员，设备资源信息                                  		struct resource *platform_get_resource(struct platform_device *dev,                                                      
+		struct resource {                                           					   unsigned int type, unsigned int num)                                                                            
+			resource_size_t start; //开始                             		参数：dev 获取的platform_dev，type，资源类型，对应于device那边resource里的flags。                                        
+			resource_size_t end;  //结束                              			num，资源索引号，如果同一类资源多个，那么指定获取哪一个。比如2个IORESOURCE_MEM，你要获取第二个，那么num指定为1.        
+			const char *name;                                         		                                                                                                                         
+			unsigned long flags;  //资源类型
+			struct resource *parent, *sibling, *child;
+		};
+		
+		这里面需要关注的主要是 start，end， flags成员。
+		start，end是通用的起始与结束。
+		flags就是资源的类型描述了。
+		/*
+		 * IO resources have these defined flags.
+		 */
+		#define IORESOURCE_BITS		0x000000ff	/* Bus-specific bits */
+
+		#define IORESOURCE_TYPE_BITS	0x00001f00	/* Resource type */
+		#define IORESOURCE_IO		0x00000100	/* PCI/ISA I/O ports */
+		#define IORESOURCE_MEM		0x00000200
+		#define IORESOURCE_REG		0x00000300	/* Register offsets */
+		#define IORESOURCE_IRQ		0x00000400
+		#define IORESOURCE_DMA		0x00000800
+		
+		比如IORESOURCE_MEM，表示资源是内存，那么这个时候start与end就是内存资源的起始和结束地址。
+		
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		}

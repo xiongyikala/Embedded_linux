@@ -1,0 +1,467 @@
+以计算机技术为基础，软硬件可裁剪的，
+低功耗，低成本的专用计算机系统
+
+晶振，cpu核，IO接口，存储器
+
+linux，android，wince，vxworks，ucos
+
+环境搭建
+开发主机（host）---介质（rs23s，网线**，usb）----目标机（target）
+1.目标机源码
+2.安装交叉工具链，cs工具（tftp，nfs，putty）
+--在uboot环境（启动引导程序）下才能下载linux核（系统镜像）
+--工具和源码都在巨人的肩膀上
+--uboot是bootloader中的一种，开源
+--uboot是裸机程序，需要先烧写进入arm中，开机就会运行，然后进行引导
+
+
+安装交叉工具链
+1.解压文件
+tar  -xvf dir.tar.gz -C 指定的目录
+sudo chmod a+w /source/rootfs -R
+
+2.改配置文件，添加环境变量，并更新
+
+	修改文件/etc/bash.bashrc添加如下内容
+	export  PATH=$PATH:/home/linux/toolchain/gcc-4.6.4/bin
+	更新配置文件
+	source  /etc/bash.bashrc
+
+3.验证
+arm-none-linux-gnueabi-gcc  –v
+
+4.安装tftp和nfs
+创建服务器与客户端的目录
+改配置文件，添加环境变量，并更新
+
+
+tftp--下载文件到arm板的内存中（uboot含有tftp的客户端）
+nfs--网络挂载（将linux中服务器的文件挂载到arm板可以联网直接访问）--感觉和云盘一样
+
+注意点：在虚拟机中，tftp与nfs都需要先运行，然后才开始启动uboot去引导
+nfs：
+sudo  /etc/init.d/nfs-kernel-server  restart
+或  sudo service nfs-kernel-server  restart
+
+tftp：
+sudo service tftpd-hpa restart
+
+
+把A映射到B，通过访问B间接访问到A
+
+
+
+
+1.物理连接--网线
+2.配置相关IP
+3.测试网络是否连通
+4.从tftp下载文件，写到flash中
+5.从flash中读到ram中
+6.设置环境变量
+7.bootm启动
+
+1.物理连接--网线
+2.配置相关IP
+3.测试网络是否连通，开启nfs服务
+4.从tftp下载文件，写到flash中
+5.从flash中读到ram中
+6.设置环境变量（指定nfs服务，挂载目录，cs的ip）
+
+
+
+这个阶段，你只能从各个模块功能的角度去把握
+1.bootloader工作流程和它的实现uboot
+2.内核的结构，这阶段重点在配置和编译上
+
+
+bootloader放在flash中的相应位置，不在开头
+zImage--->uImage
+宏定义可以选择那些代码编译，那些不编译
+注意：在根目录解压，操作等，解压出来的文件只有有限的权限，在此目录下编译，可能会出现问题
+
+1.配置：make fs4412_config-----达到选取相应目录，相应代码的功能
+	a.主板demo源码-->主板目标源码
+	b.移植---根据主板修改代码
+	c.改主板配置信息
+2.编译：make
+
+
+步骤：
+1.添加主板配置---board.cfg
+2.添加主板源代码目录（可复制demo并作相应修改,修改c文件和makefile）---board(   demo---->fs4412  )
+3.添加主板配置头文件---include/configs/fs4412.h---决定文件是否被编译     
+4.修改编译器为交叉编译器---arm-none-linux-gnueabi-
+
+看源码：----走主干
+arch/arm/cpu/armv7/start.S 开始
+然后在各种标签之间跳转，各种标签又在不同文件中，一般使用ctags，source insight 3等工具查看源代码
+不要想着每一个参数都能读懂，要看懂它们所代表的意思，它们实现的功能，结合注释看源代码
+方法：在源代码和文件中加入自己的中文注释
+
+
+源码是一级一级的写的，像子函数一样，但底层源码用的是标签，每一个标签代表一组特定的
+功能，它们的功能实现会跳到主程序下面或着是另一个文件中，一个标签功能实现完了就返回，
+然后继续执行下一个标签。有的标签功能简单，就不会往别处跳
+
+
+uboot源码：
+1.汇编阶段
+---初始化硬件（cpu，内存，中断）--搭建c语言环境
+2.c语言阶段
+---初始化板级硬件，执行命令，加载内核
+
+		阶段1：
+			1>初始化硬件（主要是CPU内部一些寄存器）
+			2>为自己第二阶段程序加载准备ram空间，初始化ram
+			3>拷贝第二阶段程序到内存空间
+			4>设置好堆栈（为什么？？构建c语言环境 c内存分布延伸，内存分布图.png）
+			5>跳转到第二阶段C入口
+		阶段2(C语言)：
+			1>初始化硬件(板级硬件设备)
+			2>将内核和根文件系统镜像读取到内存中
+			3>执行内核
+
+
+
+编译原理：
+把所有的%-y 加入COBJS
+
+局部--顶层---局部
+用头文件（fs4412）的宏决定文件是否被编进去，
+boards.cfg添加编译的目录（cpu构架，cpu，主板）
+头文件宏--变量---编译
+
+3.移植过程：
+
+     1. 工程配置
+        (1) 添加主板配置项
+            在boards.cfg文件中，加入如下:
+            主板名  cpu架构  cpu名  主板名   芯片厂家   soc名
+            origen  arm      armv7  origen   samsung    exynos    开发板
+            fs4412  arm      armv7  fs4412   samsung    exynos    产品板
+          
+        (2) 添加主板目录
+            $ cp board/samsung/origen(demo板名) board/samsung/fs4412(新主板名) -a
+            $ mv board/samsung/fs4412/origen.c board/samsung/fs4412/fs4412.c
+            修改board/samsung/fs4412/下Makefile, 内容如下:
+            COBJS   += origen.o
+            修改为
+            COBJS   += fs4412.o
+            
+        (3) 添加主板配置文件
+            $ cp include/configs/origen.h(demo板名) include/configs/fs4412.h(新主板名)
+            
+        (4) 修改交叉编译器
+			在顶层Makefile文件里面，在
+			ifeq ($(HOSTARCH),$(ARCH))
+			CROSS_COMPILE ?=
+			endif
+			下面添加如下代码段：
+            ifeq (arm,$(ARCH))
+			CROSS_COMPILE ?= arm-none-linux-gnueabi-
+			endif
+
+ 
+               }            
+  
+  
+  
+  
+  
+            
+      		
+	u-boot配置编译原理
+		
+		1.uboot配置流程
+			
+			《u-boot配置流程图.bmp》
+			
+		2.生成结果
+			include/config.mk         Makefile变量配置项(用于选择目录)
+										1. cpu架构           arch/ARCH
+										2. cpu               arch/ARCH/cpu/CPU
+										3. 主板              board/VENDOR/BOARD
+										
+			include/config.h                     宏定义配置项(用于选择硬件和命令相关代码)
+				include/configs/fs4412.h            主板配置文件
+					include/config_cmd_default.h      命令配置文件
+					(include/config_cmd_all.h)        系统支持的所有命令配置项
+					
+					
+		3.原理
+		
+			配置原理；
+				讲解配置结果在Makefile怎么用的。
+				
+				1》选择目录
+					1.包含include/config.mk 到 Makefile
+						include $(obj)include/config.mk
+						export ARCH CPU BOAR VENDOR SOC
+					2.直接在主Makefile中搜索 CPUDIR
+				
+			
+				2》选取文件
+						例: 选取dm9000x.c文件
+					   1. 配置时(make fs4412_config)，会产生如下结果：
+						  include/config.h
+							 include/configs/fs4412.h    
+						  
+					   2. 编译时，会做如下转变
+						  #define CONFIG_DRIVER_DM9000            1    (include/configs/fs4412.h)
+						  转变成Makefile变量:
+						  CONFIG_DRIVER_DM9000=y                       (include/autoconf.mk)
+						  
+					   3. include/autoconf.mk如何发挥作用
+						  include/autoconf.mk 被包含到顶层目录下的config.mk:
+						  include $(OBJTREE)/include/autoconf.mk      (config.mk)
+						  
+						  顶层目录下的config.mk 被包含到每个Makefile
+						  include $(TOPDIR)/config.mk                  (drivers/net/Makefile)
+						  
+					   4. 利用CONFIG_DRIVER_DM9000变量选取dm9000x.c
+						  打开drivers/net/Makefile, 存在如下内容:
+						  ...
+						  COBJS-$(CONFIG_DRIVER_DM9000) += dm9000x.o
+						  ...
+						  COBJS   := $(sort $(COBJS-y))
+						  ...
+					
+				3》选取文件的一部分
+					
+					#ifdef  __DEBUG__
+					.....
+					#endif
+					
+				4》给源代码提供数据
+				
+					通过宏
+					#define CONFIG_SYS_PROMPT "FS4412 #"
+					在源代码 common/main.c等源代码用到
+			
+			编译原理：
+				1.主Makefile
+					OBJS = *.o CPU的启动代码
+					LIBBOARD = lib*.o 主板目录下的启动代码编译出来的目标文件
+					LIBS += lib*.o   非启动代码
+					
+				2.子Makefile
+					LIB = lib*.o   #目录下所有*.o文件的合并
+					SOBJS = *.o   #.S编译出来的*.o
+					COBJS = *.o    #.c编译出来的*.o
+					
+	如何添加一个模块到U-BOOT?
+		例子：添加uart的驱动到u-boot
+		
+		1.添加源代码到u-boot
+			cd drivers -->mkdir uart  --> cd uart -->vim uart.c  随便添加一个不被优化掉的
+		2.添加子Makefile
+			cp drivers/net/Makefile  .
+			vim Makefile   修改关键变量值
+			
+		3.修改主Makefile，将uart添加进去
+			LIBS-y += drivers/uart/libuart.o
+					
+		
+		4.添加配置项
+			configs/fs4412.h 中添加宏  #define CONFIG_UART 1
+			编译时，汇编转换成
+			CONFIG_UART =y        (include/autoconfig.mk)
+
+
+
+
+
+
+
+
+
+
+
+
+
+内核提供界面代替用户配置头文件等
+
+menuconfig根据kconfig生成的
+kconfig--->menuconfig选中---->.config中写入CONFIG_HM6352=y
+
+
+内核源码：
+1.汇编阶段--head.s  head-common.s
+---初始化硬件（cpu，内存，mmu）--搭建c语言环境
+2.c语言阶段--main.c
+初始化内核的五大模块（进程管理，内存管理，根文件系统，网络协议，设备管理）
+挂载根文件系统，运行init进程
+	
+		总结一下整个过程就是：
+	（1）设置CPU模式
+	（2）检查CPUID是否匹配
+	（3）获取phy&virt offset
+	（4）检查atags参数
+	（5）create_page_table完成了3种地址映射的页表空间填写：
+	A． turn_mmu_on所在1M空间的平映射
+	B.  kernel image的线性映射
+	C.  atags所在1M空间的线性映射
+	（6）启动MMU
+	（7）如果有必要则进行data段的拷贝搬移?
+	（8）清空bss段?
+	（9）保存处理器ID atag地址等到指定全局变量中，设置SP，跳转到start_kernel
+	（10）初始化系统必须要的好多东西---时钟，终端等等
+	（11）挂载根文件系统
+	（12）运行init进程
+
+
+
+细节：
+.macro ------.endm 宏函数
+注意跳转标签bl
+一个地址处，放四条指令
+一个地址处能放4个字节是数据，一条指令占多少呢
+__lookup_processor_type------汇编实现结构体组遍历--r5是返回值
+r8中存物理地址与虚拟地址之间的offset
+
+viraddr ：高十二位为索引号，低二十位为offset
+
+
+内核中有哪些数据结构
+
+伪代码：ldr,.word,.equ,.long
+
+
+内核移植配置时出现可能问题：
+硬件坏了
+软件：
+1.代码不兼容
+2.代码没有被添加配置中
+
+uboot与内核
+搭建环境
+源码结构
+移植，修改，配置（最好懂配置原理）
+编译
+启动流程--记流程，看源码
+
+
+创建根文件系统步骤：
+采用Busybox创建基本命令
+创建基本的目录 /lib /etc /var /tmp /dev /sys /proc等
+添加glibc基本动态库
+创建基本的设备节点
+添加启动配置和脚本程序 /etc/inittab   /etc/fstab /etc/init.d/rcS
+测试根文件系统
+制作根文件系统镜像
+
+
+
+文件系统：
+ram:ramdisk(用于固化)  tmpfs（可动态分配空间）
+
+flash:cramfs(不能写)，jffs2，yaff32
+
+disk：ext2/ext3,fat32---window
+
+过程：目录，库，节点，配置脚本（fstab,inittab,rcs,profile）
+
+启动流程：
+mount_root
+|
+执行init=/linuxrc--->运行/sbin/init
+|
+读取并解析/etc/inittab
+|
+执行/etc/init.d/rcS脚本文件---指示挂载
+|
+挂载/etc/fstab文件指定的设备（四中文件系统）
+|
+运行shell程序
+|
+shell执行/etc/profile脚本文件---设置环境变量等
+
+文件系统相关概念（用结构体表示）：文件对象，目录项对象，索引节点(iNode)对象，超级块对象，安装点
+操作（用结构体表示）：创建，删除，安装
+
+当前理解--数据从物理上存放在文件系统中
+文件系统：存储器上管理文件的机制，代码等
+
+站在内核的角度上看--文件系统是通信的抽象接口
+内核与磁盘，u盘等存储器间的通信---块设备
+内核与流式IO设备间的通信--------字符设备
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,734 @@
+1.文件系统管理：
+	a.文件与用户：
+	ls，ls -l，pwd，cd，mkdir，rm
+	cp，mv，touch，file，sudo,wc
+	chgrp，chown，chmod，ln
+	
+	<1>ls  : 查看目录的内容或文件属性信息
+		(1)ls  
+			    显示当前目录的内容
+		(2)ls -l  （ls -ld 显示文件夹详细信息）
+			显示当前目录下文件的属性信息
+			结果如下
+					drwxrwxr-x 4 linux linux 4096 May 28 01:34 class
+			第一部分:文件类型 
+					d -> 目录文件 
+					常见文件类型标识字符
+					b(block) : 块设备文件   bcd-lps
+					c(character) : 字符设备文件 
+					d (directory): 目录文件 
+					- : 普通文件	
+					l : 软链接文件(windows快捷方式)
+					p : 管道文件(常用于进程通信) 
+					s : unix域socket文件(常用于网络通信)
+			
+			第二部分: 权限 [文件所有者权限 + 文件所有者所在组的组员权限 + 其他人权限]
+					r 读, w 写, x 执行
+					rwx rwx r-x
+					r  4
+					w  2
+					x  1	
+					用八进制表示: 0775 		
+			第三部分:
+					4 -> 硬链接数  
+			第四部分:
+					linux -> 文件所有者名
+			第五部分:
+					linux -> 文件所属于组
+			
+			第六部分:
+					文件大小 (默认单位byte)
+			第七部分:
+					文件最后一次修改时间 
+			第八部分:
+					文件名 
+					
+		(3)其他参数：
+		ls -R -> 递归显示所有的子目录 例：ls -R 多级目录 
+    ls -a -> 显示所有的文件，包括隐藏文件 
+    ls -lh -> 带单位(G,K,M)显示文件大小 
+    ls -i查看文件inode号
+    
+	<2>cp mv rm
+		cp 复制
+		a.将普通文件拷贝到指定的路径	  
+		sudo cp /mnt/hgfs/share/test.c  /home/chw
+		b.将目录拷贝到指定的路径
+		sudo cp /mnt/hgfs/share/dir  /home/chw  -a
+		c.实现备份的功能，将源文件备份一次
+		sudo cp test.c  test_bak.c 
+		d.实现备份的功能，将目录备份一次 
+		sudo cp dir  dir_bak  -a
+		mv 剪切
+		a.将普通文件移动到指定位置
+		  mv /home/chw/test.c /mnt/hgfs/share（也可以移动目录） 
+		b.将文件实现重命名的功能
+		 mv  test.c  hello.c
+		c.将目录实现重命名的功能
+		 mv  dir   dir_list
+		rm 删除
+		rm -rf强制删除
+
+	<3>mkdir 新建一个目录
+		常用：
+		a.在当前目录下新建一个目录
+		mkdir /home/chw/dir
+		b.在当前目录下递归创建多个目录
+		mkdir -p /home/chw/one/two/three
+		
+	<4>cd(change directory) 切换工作目录 	 
+	常用：		
+		cd + 回车  切换到用户主目录（/home/ubuntu）
+	  cd  + 路径名称  切换到指定路径下面
+	  例如：cd  /home/chw/work
+	  cd .. 切换到上一层目录
+	  cd ～ 切换到用户主目录
+	  cd /home/ubuntu
+	  cd  - 切换到前一个工作目录
+  
+  <5>文件链接
+ 		（1）：ln  源文件名  硬链接文件名
+ 		（2）：ln -s 源文件  软链接文件
+	
+	<6>wc ：统计 行数 单词的个数 字节数
+		例如：
+		a.txt
+		｛
+			123
+			abc
+			789 ABCD
+		｝
+
+		参数：
+		-l   显示一个文件的行数
+		-w   显示一个文件的单词个数
+		-c   显示一个文件的字节数
+  
+  <7>chmod 修该文件的权限
+		格式：
+				chmod  权限  文件名
+		常用：
+		u: user（普通用户）
+		g: group（组用户）
+		o: other(其他用户)
+		chmod u+x test.c
+		chmod u+w test.c
+		chmod g-r test.c 
+		chmod o+x test.c
+		常用：
+		  100 101 001  
+		  r-- -w- --x
+		故八进制表示：
+		r--->4
+		w---->2
+		x---->1	
+		如：
+		chmod 777 test.c
+		chmod 755 test.c			
+	
+	<8>chown 修改文件所有者：
+		sudo chown 所有者名 文件
+		例如：sudo chown root  test.c 
+	
+	<9>chgrp 修改文件所在组
+		sudo chgrp  组名  文件
+		例如：sudo chgrp root  test.c 
+		
+	<10>用户命令
+		1、用户相关路径
+		a./etc/passwd用户基本信息
+		b./etc/shadow二次加密文件
+		c./etc/group 用户组文件
+		2、用户命令
+		<1>adduser 添加用户。会要求输入新密码，全名。
+		常用：sudo adduser  farsight_chw
+		<2>deluser删除用户
+		a.只删除用户
+		 sudo deluser  farsight_chw
+		注意：删除后我们用户主目录还是存在
+		b.删除用户和用户主目录
+		 sudo deluser  --remove-home farsight_chw
+		<3>su 切换用户命令
+		sudo su 用户名
+
+	b.安装卸载：
+	<1>dpkg软件包安装命令（本地安装）
+		特点：不会检查软件包之前的依赖关系。故可能安装多个软件包。
+		a.安装软件包[单个软件包安装]
+		sudo dpkg -i  软件包.deb
+		例如：sudo dpkg -i g++_4.1.2-9ubuntu2_i386.deb;
+		
+		b.安装多个deb软件包（*表示匹配所有以.deb结尾的软件包）
+		sudo dpkg -i  *.deb
+		
+		c.移除已经安装的软件包
+		sudo dpkg  -r 软件包名
+		例如：sudo dpkg -r nano
+		
+		d.移除已安装的软件包及配置文件
+		sudo dpkg -P 软件包名 移除已安装的软件包及配置文件 
+		
+		e.列出软件包在系统所安装的文件 list
+		sudo dpkg -L 软件包名  
+		
+		f.列出软件包安装状态
+		sudo dpkg -s 软件包名 
+
+	<2>apt-get软件包安装命令（联网安装）
+		特点：会自动检测软件包之间的依赖关系，并自动下载下来安装。
+		2.1.三个重要路径：
+			/etc/apt/sources.list [文件] -> 镜像站点服务器地址(可以理解成软件包的下载网站)
+			/var/lib/apt/lists [目录] -> 每个镜像站点软件包的索引文件（可以理解成我们软件包下载网站具体内容的缓存，例如：软件版本，软件名等等）
+			/var/cache/apt/archives [目录 ] -> 下载下来软件包存放路径
+	
+			思考：如何测试网络是否联通呢？
+			ping -c4  www.baidu.com  向百度的服务器发送4次数据包
+	
+		2.2.软件包的安装
+			sudo apt-get install 软件包名称
+			例如：sudo apt-get install sl
+	
+		2.3.卸载软件包
+			sudo apt-get remove 软件包名称
+			例如：sudo apt-get remove sl
+	
+		2.4.更新索引文件
+			sudo apt-get update 更新索引
+	
+		2.5.清空软件包下载的目录
+		sudo apt-get clean
+
+
+	c.压缩解压：
+	bzip2压缩，gzip压缩，zip压缩，tar解压
+	<1>zip压缩
+		（1）压缩文件
+		 zip test.zip test1.c test2.c
+		 (2)解压文件
+		 unzip test.zip
+
+	<2>gzip压缩(注：只能对普通文件压缩，不能对目录文件压缩)
+			(1)压缩文件
+			gzip test.c
+			(2)解压文件
+			gunzip test.c.gz
+ 	
+	<3>bzip2压缩（注：bzip2对一个文件进行高比例压缩，不能对目录文件压缩）
+			(1)压缩文件
+			bzip2 test.c
+			(2)解压文件
+			bunzip2  test.c.bzip2
+
+
+	<4>tar  对目录和普通文件都可以进行打包压缩 (重点)
+	参数:
+			c -> 创建
+			x -> 释放
+			z -> gzip操作
+			j -> bzip2操作
+			v -> 显示过程
+			f -> 指定文件名(一定需要放在最后)
+			 
+			(1)对一个目录直接进行打包压缩命令
+			sudo tar -czvf work.tar.gz work
+			sudo tar -cjvf work.tar.bz2 work
+			
+			(2)释放一个文件
+			sudo tar -xzvf work.tar.gz
+			sudo tar -xjvf work.tar.bz2
+			或者
+			sudo tar -xvf work.tar.gz/work.tar.bz2(两种都可以释放)
+			参数：
+			-C 指定释放到一个指定的目录
+			tar  -xvf dir.tar.gz -C 指定的目录
+			
+			
+	d.寻找比较：
+	cat，grep，管道链接符"|"，find
+	head，tail，cut，diff，
+	<1>cat  显示文件的内容
+		常用：
+				cat /home/chw/test.c
+				
+		参数：-n 加行号来显示内容
+				cat -n /home/chw/test.c
+				
+	<2>grep  从文件中搜索字符串
+		例如： 在/etc/passwd中查找“chw”
+		grep "chw" /etc/passwd
+		常用参数：
+		a.搜索file文件中,以"string"开头的行
+		例如：	grep "^string" file 
+		b.搜索file文件中,以"string"结尾的行
+		例如： grep "string$" file 
+		c.搜索file文件中，只包含“string”的行
+		例如：grep "^string$" file	 
+		d.在搜索文件的时候，同时显示行号
+		例如：grep -n "chw"  /etc/passwd
+		习惯的用法：
+		e.在当前目录下所有的文件中搜索"main"(包括子目录)
+		grep "main" * -nR
+		
+	<3>管道链接符"|" ->将一个命令的输出当作另一个命令的输入
+	例如：cat /etc/passwd | grep "chw" 
+			ls  /usr/include | grep "stdio.h"
+
+	<4>find ：在指定路径下搜索文件
+		常用：
+		find 路径 -name  文件名
+		例如：find /home/chw -name test.c  
+		
+	<5>head 显示文件开头的内容
+
+		a.查看/etc/passwd 文件开头10行
+		例如：head -10 /etc/passwd
+		
+	<6>tail 显示文件尾部指定的行数
+		例如：tail -1 /etc/passwd
+		
+		练习：如何获得/etc/passwd中第34行的信息
+		
+		
+	<7>cut ： 字符串裁剪函数
+		注意：一般与管道联合使用
+		
+		格式：
+		cut -d "分割字符" -f 字段
+		
+		参数：
+		-d    指定我们的分割字符
+		-f    指定我们显示的区域
+		例如：
+		tail -1 /etc/passwd | cut -d ":" -f 1,3,4	 
+		grep "chw" /etc/passwd | cut -d ":" -f 1,3,4	 
+
+	e.特殊字符
+	<1>通配符
+		*-----表示匹配任意长度的字符串
+		例如： ls file_*.c
+		?-----表示匹配一个长度的字符串
+		例如：ls file_?.c
+				  ls file_??.c
+		[...]-----表示匹配其中指定的一个字符，是多者选其一
+		例如：ls file_[123].c
+		[-]-------表示匹配一个字符范围
+		例如：ls file_[a-z].c
+		[^...]-----匹配除了指定字符以外的单个字符
+		例如：ls file_[^a13]
+	
+	<2>管道符
+		管道链接符"|" ->将一个命令的输出当作另一个命令的输入
+		例如：cat /etc/passwd | grep "chw" 
+			ls  /usr/include | grep "stdio.h"
+
+	<3>输入输出重定向
+		(1)输出重定向(>)
+		定义：把本来输出到屏幕上的内容，改为输出到文件中。
+		例如：
+		ls > log [重定向之前会清除log文件中的内容]
+		ls >> log[追加的方式写]
+		(2)输入重定向（<）
+		定义：把从键盘输入的信息改成其他地方获取，例如从命令或者文件中获取。
+		例如：
+		开启两个终端一个叫做ubuntu用户，一个叫做farisght.
+		ubuntu用户输入：wall ，然后然后从键盘上输入数据。然后按下ctrl + d,这个时候，从键盘
+		上输入的数据，就会发送到另一个用户farisght上去。
+		wall < log
+		把从键盘上输入数据改为从log文件中获取，并把获得的数据发送另一个用户上。
+		(3)出错重定向（2>）
+		定义：把错误的信息重新输出到对应的文件中.
+		例如：
+		ls adsfadsfasdfs 2>log
+	
+	<4>命令置换 将一个命令的输出当做另外一个命令的参数
+		格式：command1 `command2`
+		注：这里不是单引号，是反撇号，esc下面那个键。
+		例如：find `pwd` -name "hello.c"用pwd命令输出的/home/ubuntu来代替我们的路径
+
+	f.其他：
+	clear，date，which
+	shutdown，reboot，passwd
+	echo，export，PATH
+	alias + unalias
+	<1>passwd 修改用户名密码
+		格式为：
+		passwd username(如果没有成功可在前面加上sudo)
+		注意：不用输入原密码
+		
+
+	<2>echo 用于在显示器上显示一段信息
+		格式为：echo 参数 信息
+		常用参数有：
+		-n 输出不换行（默认换行）
+		如：
+		echo -n "hello  world"（注意引号可以不写：但结果在中间有多个空格时有区别）
+		echo $SHELL 查看shell信息（以$开头的是系统已经定义的变量，echo输出变量中的内容）
+
+
+	<3>clear 清屏指令
+		快捷键是 ctrl + l
+
+	<4>alias 命令定义别名
+		格式为 alias 新名='原来的名字'
+		注意：=两边不能有空格
+		如：
+		alias dirlist='ls -l'可用dirlist代替ls -l使用（ls -l仍有用）
+		alias home_d=cd /home/ubutu 即用home_d命令回到主目录。
+
+	<5>unalias取消定义别名
+		格式为：unalias 已定义的别名
+		如unalias dirlist
+
+	<6>history 查看历史命令
+		格式：history 数字（显示最后十条历史命令）
+		可用 echo $HISTSIZE 查看历史命令容量。		
+
+	<7>回显
+		stty -echo  关闭回显
+		stty echo  打开回显
+
+2.磁盘管理：
+	mount + umount
+	df  -Th
+	<1> df查看磁盘空间的使用情况
+		格式df 参数 filename
+		常用df -Th（filename为空时为显示所有）
+		参数 -T显示物理文件系统的格式类型
+		-h以M为单位显示
+		-k以k为单位显示
+		-a显示所有文件系统情况（包括虚拟文件系统）
+
+	<2>mount 文件系统挂载
+		mount挂载文件系统，文件系统挂载后才能进行使用
+		用法：挂载本地设备
+		sudo mount 设备文件 挂载点目录
+		例如：
+		sudo mount /dev/sda1 /mnt/udisk (把第一块硬盘挂载到/mnt/udisk)
+
+	<3>umount 卸载设备
+		sudo umount 设备文件
+		例如：sudo umount /dev/sda1
+		
+3.进程管理：
+	<1>ps  -ef 查看系统的进程(相当于给当前进程截了一个图)
+	<2>kill -信号的编号 PID(kill -l查看信号编号)
+		常用：
+		宏名       信号的编号         作用
+		SIGKILL      9               杀死进程
+		SIGSTOP      19             让进程停止
+		例如：
+		给进程发结束信号
+		Kill -9  PID号 
+	<3>top   动态显示我们的进程
+4.网络管理：
+	(1)显示网络信息
+	ifconfig
+	
+	(2)设置IP地址和子网掩码
+	sudo ifconfig eth0 192.168.0.158
+	sudo ifconfig eth0 192.168.0.158 netmask 255.255.255.0
+	
+	(3)设置网关
+	sudo route add default gw 192.168.0.1
+	
+	(4)测试网络是否连同
+	ping ip地址或域名
+	
+	
+	
+	
+	
+shell脚本
+shell变量，运算符，控制语句，函数
+一、变量
+<1>用户自定义变量
+		特点：
+		1.不支持数据类型，它将任意复制给变量的数据当做一串字符来处理。
+		2.我们定义变量的时候，不需要给钱（$）,但是我们输出的时候，需要加$.
+		3.我们给变量赋值的时候，=两边不能有空格
+		4.我们引用一个变量的时候，需要加$或者${变量名}
+		
+		例如：
+		DATA=“Hello”
+		echo $DATA
+		string=DATA
+		
+<2>位置变量(命令行参数)                              
+                                                     
+		$0 : shell脚本的名字                                                                                      
+		$1-$9: 第一个至第九个命令行参数，空格作为分隔符                                                          
+		$#:命令行参数的个数[不包括$0]                        	                                                     
+		$*:所有的位置参数                                    
+		$@：所有的位置参数                                                                                       
+		$? : shell命令的执行状态或者函数的返回值             
+		shell中  0为真，非0为假                              
+		$$ ：shell脚本的进程号  
+
+
+二、运算符
+1、基本四则运算 (注意这里的+ - * / 是参数左右要有空格)
+expr 
+		语法为 expr 数字（或变量） 运算符 数字（或变量）
+		VAR=`expr 1 + 3`  <====>   ((VAR = 1 + 3 ))
+		echo $VAR                  echo $VAR
+注意： 
+*为shell中特殊字符 故不能作为乘法运算符 乘法为\*
+((c运算语句)) 可以用c语句计算
+
+2、判断与逻辑命令 （test 可用[]代替括号两边需要有空格）
+<1>test(注意这里的= ！= 是参数左右要有空格)
+	例如:test  123 = 456
+可以测试三种对象 
+a.字符串 
+		参数 
+		= 		判断字符串是否相等
+		！=		判断字符串是否不相等
+		-z		判断字符串长度是否为0
+		-n		判断字符串长度是否不为0  
+b.整数
+		参数
+		-eq		 等于
+		-ne    不等于
+		-ge    大于等于
+		-le    小于等于
+		-gt    大于
+		-lt    小于
+c.文件属性
+		参数
+		-d  测试是否为一个目录
+		-f  测试是否为一个普通文件
+<2>test也可作逻辑命令
+		参数-a(与) -o（或）
+
+三、控制语句
+		注：exit用法
+		格式：exit  n
+		功能：退出shell脚本
+		参数： n  表示退出码。
+		0  		表示成功退出
+		非0   表示异常退出
+		
+		(注：exit <===>exit 0  表示正常退出)
+<1>选择语句		
+a、单分支语句
+		
+		//if test 表达式                  //if test 表达式
+		if [ 表达式 ]                     if [ 表达式 ] 
+		then                              then  
+				命令1                             命令1  
+				命令2                             命令2
+		 		...                           ...  
+		fi                                else
+		                                      命令1
+		                                      命令2
+		                                      ...
+		                                  fi  			
+b、多分支选择语句
+		if [ 表达式1 ]
+		then
+				命令1
+				...
+		elif [ 表达式2 ]
+		then
+				命令2
+				...
+		elif [ 表达式3 ]
+		then
+				命令3
+				...		
+		fi
+		
+		
+c、switch语句
+		case  字符串变量  in
+				模式1)
+					命令列表1
+					;;
+				模式2)
+					命令列表2
+					;;
+				模式3)
+					命令列表3
+					;;
+					*)							===》相当于default
+					命令列表n
+		esac
+	
+
+
+<2>循环语句
+a、while循环
+		
+		while [ 条件 ]
+		do
+					命令列表
+		done
+		
+		规则：当条件为假，循环结束。条件为真，一直执行。	
+		
+b、for循环	
+		for  变量名 in 单词表
+		do
+				命令列表
+				....
+		done
+		
+		传统：
+		for  var in "hello" "nihao" "thank you and you"   
+		do
+					echo $var
+		done
+    区别：""表示一个字符串，若是不扩起来表示多个字符串,且""中可以带变量
+    
+		类c语言格式：
+	    for (( i=0; i<5; i=i+1 ))
+	    do
+	    	echo -n $i
+	    done
+	   
+	    结果 ：1 2 3 4 5
+	联系数组的实例： 
+		传统：  
+			A="0 1 2 3 4 5 6 7"
+			array=(q w e r) <==========>array[0]=q;array[1]=w;array[2]=e;array[3]=r
+											<==========>array=([0]=q [1]=w [2]=e [3]=r)	   					
+			for i in $A
+			do 
+			echo  $i
+			echo ${array[$i]}
+			done
+				
+		类c语言：
+			for (( i = 0;i < 8 ;i++))
+			do
+			echo  $i
+			echo ${array[$i]}
+			done
+    
+    
+五、shell 函数
+		概念：我们常常把完成固定功能、且多次使用的一组命令（语句）封装在一个
+					结构中，这个结构我们就叫做函数。
+1、标准输入输出
+<1>echo输出 前面已经讲过
+<2>read标准输入
+		语法为 read var1 var2 var3
+		把读入的数据第一个给var1 第二个给var2 ....
+		以此类推把剩下的所有变量给最后一个变量。
+		如果键盘没有输入则，变量值为空。 
+		read var1 var2 var3
+		10 20 30 
+		var1就是10,var2就是20,var3就是30                           					
+
+2、自定义函数
+<1>函数的定义形式
+		function 函数名()
+		{
+				命令	
+		}
+		
+		----------------------
+		函数名()
+		{
+				命令	
+		}
+		
+<2>函数的调用
+	方法1： 通过$?获得函数的返回值
+		
+		函数名 参数1 参数2 [注：若是没有参数，则参数省略]
+		
+		$?通过return获得函数的返回值
+		
+		例如：
+		
+		function add()     //不从外部接参数        
+		{                                  
+				a=10                               
+				b=20                               
+				sum=`expr $a + $b`              
+				return $sum	                    
+		}                                                                      
+		add
+		ret=$?
+		echo $ret
+		
+		-------------------------------------------------------
+		function add()       //从用户变量处接参数       
+		{                                                                           
+				sum=`expr $1 + $2`               
+				return $sum	                    
+		}                                   
+		a=10
+		b=20                                     
+		add $a $b
+		ret=$?
+		echo $ret
+		
+		-------------------------------------------------------
+		function add()       //从命令行接参数       
+		{                                                                            
+				sum=`expr $1 + $2`              
+				return $sum	                     
+		}                                                                        
+		add $1 $2
+		ret=$?
+		echo $ret
+		
+
+		
+		注：return只能返回整数，若是字符串的话则需要用到方法2
+		-------------------------------------------------------
+	方法2：通过命令置换获得函数的结果
+		
+		变量=`函数名 参数1 参数2`
+		
+		注意：变量保存的内容是函数通过echo输出的内容。
+		
+		例如：
+		function string()     //不从外部接参数  
+		{
+				VAR="welcome to wuhan"
+				echo $VAR
+		}
+		
+		ret=`string`          //string  
+		echo $ret
+		
+	  -------------------------------------------------------
+		function string()     //从命令行接参数
+		{
+				VAR=$*
+				echo $VAR
+		}
+		
+		ret=`string s*`
+		echo $ret
+		
+		-------------------------------------------------------
+		function string()     //从用户变量处接参数           
+		{                                   
+				VAR=$*            //VAR="$1 $2 $3"                      
+				echo $VAR                           
+		}                                   
+		
+		s="welcome to wuhan"                     
+		ret=`string s`                     
+		echo $ret
+
+注：
+1.运行脚本命令 bash
+2.退出脚本命令 exit 0（0可省略，为正常退出）
+
+六、总结
+1、shell中的所有命令结果临时有效，当新开启一个终端后便失效。
+想永久有效必须更改配置文件如：主目录下的.bashcr。
+2、环境变量（操作系统提供给我们用户的全局变量，在任何一个路径下都可以访问到它）
+PATH  shell默认搜索的路径就是我们PATH环境变量中包含的路径。
+查看环境变量的路径：
+echo $PATH
+使用方法：
+添加环境变量
+export PATH=$PATH:路径1：路径2：路径3：...
+例如：
+export PATH=$PATH:/home/ubuntu
